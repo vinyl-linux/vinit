@@ -1,0 +1,14 @@
+type = "cron"
+
+[user]
+user = "jspc"
+group = "jspc"
+
+[grouping]
+name = "system"
+
+[command]
+args = "-a -b -c 100"
+
+[cron]
+schedule = "blepe bloop"

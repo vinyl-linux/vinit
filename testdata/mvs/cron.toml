@@ -1,0 +1,7 @@
+type = "cron"
+
+[grouping]
+name = "user"
+
+[cron]
+schedule = "@daily"

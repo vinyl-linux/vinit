@@ -1,0 +1,8 @@
+type = "service"
+
+[user]
+user = "jspc"
+group = "jspc"
+
+[command]
+args = "-a -b -c 100"

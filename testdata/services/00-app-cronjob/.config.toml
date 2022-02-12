@@ -1,0 +1,14 @@
+# 'App' service config file
+#
+
+type = "cron"
+
+[user]
+user = "jspc"
+group = "jspc"
+
+[grouping]
+name = "system"
+
+[cron]
+schedule = "* * * * *"

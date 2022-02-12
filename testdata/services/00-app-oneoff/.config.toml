@@ -1,0 +1,14 @@
+type = "oneoff"
+
+[user]
+user = "jspc"
+group = "jspc"
+
+[grouping]
+name = "system"
+
+[oneoff]
+valid_exit_codes = [0]
+
+[command]
+args = "-a -b -c 100"
