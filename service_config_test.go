@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-func TestService(t *testing.T) {
+func TestServiceConfig(t *testing.T) {
 	for _, test := range []struct {
 		name        string
 		fn          string
@@ -30,7 +30,7 @@ func TestService(t *testing.T) {
 		{"minimal viable oneoff", "testdata/mvs/oneoff.toml", false},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			_, err := LoadService(test.fn)
+			_, err := LoadServiceConfig(test.fn)
 
 			if test.expectError && err == nil {
 				t.Errorf("expected error, received none")
