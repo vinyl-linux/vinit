@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"os/user"
+	"strconv"
 	"time"
 
 	"github.com/BurntSushi/toml"
@@ -53,6 +55,24 @@ type User struct {
 	Group string `toml:"group"`
 }
 
+func (u User) Uid() (uid int64, err error) {
+	id, err := user.Lookup(u.User)
+	if err != nil {
+		return
+	}
+
+	return strconv.ParseInt(id.Uid, 10, 32)
+}
+
+func (u User) Gid() (uid int64, err error) {
+	id, err := user.LookupGroup(u.Group)
+	if err != nil {
+		return
+	}
+
+	return strconv.ParseInt(id.Gid, 10, 32)
+}
+
 type Grouping struct {
 	GroupName string `toml:"name"`
 }
@@ -78,6 +98,16 @@ type Cron struct {
 
 type Oneoff struct {
 	ValidCodes []int `toml:"valid_exit_codes"`
+}
+
+func (o Oneoff) Success(exitCode int) bool {
+	for _, c := range o.ValidCodes {
+		if c == exitCode {
+			return true
+		}
+	}
+
+	return false
 }
 
 type Command struct {
