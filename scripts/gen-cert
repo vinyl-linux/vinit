@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+#
+# Hat-tip: https://dev.to/techschoolguru/how-to-secure-grpc-connection-with-ssl-tls-in-go-4ph
+#
+# Rationale:
+#  * For gRPC we need to secure, with https, the connection between the loadbalancer and the serving pod
+#  * This cert can be invalid, or expired, or self-signed; just has to be there
+#
+# See: https://cloud.google.com/kubernetes-engine/docs/how-to/ingress-http2 and https://cloud.google.com/load-balancing/docs/ssl-certificates/encryption-to-the-backends
+
+set -axe
+
+openssl req -x509 -newkey rsa:4096 -days 365 -nodes -keyout ca-key.pem -out ca-cert.pem -subj "/C=GB/ST=GB/L=Scunthorpe/O=jjspc/OU=Engineering/CN=*/emailAddress=engineering@jspc.pw"
+openssl x509 -in ca-cert.pem -noout -text
+
+openssl req -newkey rsa:4096 -nodes -keyout server-key.pem -out server-req.pem -subj "/C=GB/ST=GB/L=Scunthorpe/O=jjspc/OU=Engineering/CN=*/emailAddress=engineering@jspc.pw"
+
+openssl x509 -req -in server-req.pem -days 60 -CA ca-cert.pem -CAkey ca-key.pem -CAcreateserial -out server-cert.pem
+
+openssl x509 -in server-cert.pem -noout -text

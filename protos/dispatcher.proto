@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+option go_package = "github.com/vinyl-linux/vinit/dispatcher";
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+
+service Dispatcher {
+  // Service related bits
+  rpc Start(Service) returns (google.protobuf.Empty) {}
+  rpc Stop(Service) returns (google.protobuf.Empty) {}
+  rpc Status(Service) returns (ServiceStatus) {}
+
+  // vinit related operations
+  rpc Reload(google.protobuf.Empty) returns (google.protobuf.Empty) {}
+  rpc StatusAll(google.protobuf.Empty) returns (stream ServiceStatus) {}
+}
+
+message Service {
+  string name = 1;
+}
+
+message ServiceStatus {
+  Service svc = 1;
+  bool running = 2;
+  uint32 pid = 3;
+  uint32 exit_status = 4;
+  google.protobuf.Timestamp start_time = 5;
+  google.protobuf.Timestamp end_time = 6;
+  bool success = 7;
+  string error = 8;
+}
