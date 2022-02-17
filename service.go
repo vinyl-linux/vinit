@@ -117,7 +117,7 @@ func (s *Service) Start() (err error) {
 }
 
 func (s *Service) start() (err error) {
-	s.proc = exec.Command(s.bin, s.Config.Command.Args...)
+	s.proc = exec.Command(s.bin, s.Config.Command.Args...) // #nosec G204
 	s.proc.Env = s.Env
 	s.proc.Dir = s.wd
 	s.proc.SysProcAttr = &syscall.SysProcAttr{}
@@ -191,13 +191,13 @@ func (s *Service) mkLogdir() error {
 }
 
 func (s *Service) streamStdout() (err error) {
-	s.proc.Stdout, err = os.OpenFile(filepath.Join(s.logdir, "stdout"), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	s.proc.Stdout, err = os.OpenFile(filepath.Join(s.logdir, "stdout"), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
 
 	return
 }
 
 func (s *Service) streamStderr() (err error) {
-	s.proc.Stderr, err = os.OpenFile(filepath.Join(s.logdir, "stderr"), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	s.proc.Stderr, err = os.OpenFile(filepath.Join(s.logdir, "stderr"), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
 
 	return
 }

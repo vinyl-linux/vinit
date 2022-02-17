@@ -11,7 +11,7 @@ type EnvVars []string
 func LoadEnvVars(fn string) (ev EnvVars, err error) {
 	ev = make(EnvVars, 0)
 
-	file, err := os.Open(fn)
+	file, err := os.Open(fn) // #nosec G304
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			// missing file should not be an error, but rather
@@ -22,7 +22,7 @@ func LoadEnvVars(fn string) (ev EnvVars, err error) {
 		return
 	}
 
-	defer file.Close()
+	defer file.Close() // #nosec G307
 
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
