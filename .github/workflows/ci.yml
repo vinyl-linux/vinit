@@ -23,7 +23,9 @@ jobs:
       run: make
 
     - name: Test
-      run: make test
+      run: |
+        sudo useradd -m jspc
+        make test
 
     - name: gosec
       run: |
@@ -49,8 +51,14 @@ jobs:
         # Disabling shallow clone is recommended for improving relevancy of reporting
         fetch-depth: 0
 
+    - uses: actions/setup-go@v2
+      with:
+        go-version: 1.17
+
     - name: Test
-      run: make test
+      run: |
+        sudo useradd -m jspc
+        make test
 
     - name: SonarCloud Scan
       uses: sonarsource/sonarcloud-github-action@master
