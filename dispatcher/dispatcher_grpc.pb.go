@@ -27,9 +27,10 @@ type DispatcherClient interface {
 	Start(ctx context.Context, in *Service, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	Stop(ctx context.Context, in *Service, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	Status(ctx context.Context, in *Service, opts ...grpc.CallOption) (*ServiceStatus, error)
+	Reload(ctx context.Context, in *Service, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	// vinit related operations
-	Reload(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*emptypb.Empty, error)
-	StatusAll(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (Dispatcher_StatusAllClient, error)
+	ReadConfigs(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	SystemStatus(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (Dispatcher_SystemStatusClient, error)
 }
 
 type dispatcherClient struct {
@@ -67,7 +68,7 @@ func (c *dispatcherClient) Status(ctx context.Context, in *Service, opts ...grpc
 	return out, nil
 }
 
-func (c *dispatcherClient) Reload(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+func (c *dispatcherClient) Reload(ctx context.Context, in *Service, opts ...grpc.CallOption) (*emptypb.Empty, error) {
 	out := new(emptypb.Empty)
 	err := c.cc.Invoke(ctx, "/Dispatcher/Reload", in, out, opts...)
 	if err != nil {
@@ -76,12 +77,21 @@ func (c *dispatcherClient) Reload(ctx context.Context, in *emptypb.Empty, opts .
 	return out, nil
 }
 
-func (c *dispatcherClient) StatusAll(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (Dispatcher_StatusAllClient, error) {
-	stream, err := c.cc.NewStream(ctx, &Dispatcher_ServiceDesc.Streams[0], "/Dispatcher/StatusAll", opts...)
+func (c *dispatcherClient) ReadConfigs(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, "/Dispatcher/ReadConfigs", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &dispatcherStatusAllClient{stream}
+	return out, nil
+}
+
+func (c *dispatcherClient) SystemStatus(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (Dispatcher_SystemStatusClient, error) {
+	stream, err := c.cc.NewStream(ctx, &Dispatcher_ServiceDesc.Streams[0], "/Dispatcher/SystemStatus", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &dispatcherSystemStatusClient{stream}
 	if err := x.ClientStream.SendMsg(in); err != nil {
 		return nil, err
 	}
@@ -91,16 +101,16 @@ func (c *dispatcherClient) StatusAll(ctx context.Context, in *emptypb.Empty, opt
 	return x, nil
 }
 
-type Dispatcher_StatusAllClient interface {
+type Dispatcher_SystemStatusClient interface {
 	Recv() (*ServiceStatus, error)
 	grpc.ClientStream
 }
 
-type dispatcherStatusAllClient struct {
+type dispatcherSystemStatusClient struct {
 	grpc.ClientStream
 }
 
-func (x *dispatcherStatusAllClient) Recv() (*ServiceStatus, error) {
+func (x *dispatcherSystemStatusClient) Recv() (*ServiceStatus, error) {
 	m := new(ServiceStatus)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
@@ -116,9 +126,10 @@ type DispatcherServer interface {
 	Start(context.Context, *Service) (*emptypb.Empty, error)
 	Stop(context.Context, *Service) (*emptypb.Empty, error)
 	Status(context.Context, *Service) (*ServiceStatus, error)
+	Reload(context.Context, *Service) (*emptypb.Empty, error)
 	// vinit related operations
-	Reload(context.Context, *emptypb.Empty) (*emptypb.Empty, error)
-	StatusAll(*emptypb.Empty, Dispatcher_StatusAllServer) error
+	ReadConfigs(context.Context, *emptypb.Empty) (*emptypb.Empty, error)
+	SystemStatus(*emptypb.Empty, Dispatcher_SystemStatusServer) error
 	mustEmbedUnimplementedDispatcherServer()
 }
 
@@ -135,11 +146,14 @@ func (UnimplementedDispatcherServer) Stop(context.Context, *Service) (*emptypb.E
 func (UnimplementedDispatcherServer) Status(context.Context, *Service) (*ServiceStatus, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Status not implemented")
 }
-func (UnimplementedDispatcherServer) Reload(context.Context, *emptypb.Empty) (*emptypb.Empty, error) {
+func (UnimplementedDispatcherServer) Reload(context.Context, *Service) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Reload not implemented")
 }
-func (UnimplementedDispatcherServer) StatusAll(*emptypb.Empty, Dispatcher_StatusAllServer) error {
-	return status.Errorf(codes.Unimplemented, "method StatusAll not implemented")
+func (UnimplementedDispatcherServer) ReadConfigs(context.Context, *emptypb.Empty) (*emptypb.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ReadConfigs not implemented")
+}
+func (UnimplementedDispatcherServer) SystemStatus(*emptypb.Empty, Dispatcher_SystemStatusServer) error {
+	return status.Errorf(codes.Unimplemented, "method SystemStatus not implemented")
 }
 func (UnimplementedDispatcherServer) mustEmbedUnimplementedDispatcherServer() {}
 
@@ -209,7 +223,7 @@ func _Dispatcher_Status_Handler(srv interface{}, ctx context.Context, dec func(i
 }
 
 func _Dispatcher_Reload_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(emptypb.Empty)
+	in := new(Service)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -221,29 +235,47 @@ func _Dispatcher_Reload_Handler(srv interface{}, ctx context.Context, dec func(i
 		FullMethod: "/Dispatcher/Reload",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(DispatcherServer).Reload(ctx, req.(*emptypb.Empty))
+		return srv.(DispatcherServer).Reload(ctx, req.(*Service))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Dispatcher_StatusAll_Handler(srv interface{}, stream grpc.ServerStream) error {
+func _Dispatcher_ReadConfigs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(emptypb.Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DispatcherServer).ReadConfigs(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/Dispatcher/ReadConfigs",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DispatcherServer).ReadConfigs(ctx, req.(*emptypb.Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Dispatcher_SystemStatus_Handler(srv interface{}, stream grpc.ServerStream) error {
 	m := new(emptypb.Empty)
 	if err := stream.RecvMsg(m); err != nil {
 		return err
 	}
-	return srv.(DispatcherServer).StatusAll(m, &dispatcherStatusAllServer{stream})
+	return srv.(DispatcherServer).SystemStatus(m, &dispatcherSystemStatusServer{stream})
 }
 
-type Dispatcher_StatusAllServer interface {
+type Dispatcher_SystemStatusServer interface {
 	Send(*ServiceStatus) error
 	grpc.ServerStream
 }
 
-type dispatcherStatusAllServer struct {
+type dispatcherSystemStatusServer struct {
 	grpc.ServerStream
 }
 
-func (x *dispatcherStatusAllServer) Send(m *ServiceStatus) error {
+func (x *dispatcherSystemStatusServer) Send(m *ServiceStatus) error {
 	return x.ServerStream.SendMsg(m)
 }
 
@@ -270,11 +302,15 @@ var Dispatcher_ServiceDesc = grpc.ServiceDesc{
 			MethodName: "Reload",
 			Handler:    _Dispatcher_Reload_Handler,
 		},
+		{
+			MethodName: "ReadConfigs",
+			Handler:    _Dispatcher_ReadConfigs_Handler,
+		},
 	},
 	Streams: []grpc.StreamDesc{
 		{
-			StreamName:    "StatusAll",
-			Handler:       _Dispatcher_StatusAll_Handler,
+			StreamName:    "SystemStatus",
+			Handler:       _Dispatcher_SystemStatus_Handler,
 			ServerStreams: true,
 		},
 	},

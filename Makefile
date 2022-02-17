@@ -10,6 +10,7 @@ CERTS := $(CERTS_DIR)/ca-key.pem     \
 	 $(CERTS_DIR)/server-cert.pem
 
 BINARY := vinit
+TEST_BINARY := vinit-test
 
 default: $(GRPC_FILES) $(CERTS) $(BINARY)
 
@@ -28,3 +29,20 @@ $(CERTS): | $(CERTS_DIR)
 
 $(BINARY): $(GRPC_FILES) $(CERTS) *.go go.mod go.sum
 	CGO_ENABLED=0 go build -ldflags="-s -w" -trimpath -o $@
+
+
+# Because we need to do things like setuid on binaries, we need
+# to run tests via sudo.
+#
+# In order to do this, we need to compile the tests first, and then
+# run it with sudo.
+#
+# This avoids having to redownload dependencies and having to configure
+# toolchains/ go env vars
+$(TEST_BINARY): $(GRPC_FILES) $(CERTS) *.go go.mod go.sum
+	-go test -covermode=count -o $@ -tags sudo > /dev/null
+
+.PHONY: test
+test: $(TEST_BINARY)
+	sudo ./$< -test.coverprofile=count.out -test.v
+	-go tool cover -html=count.out

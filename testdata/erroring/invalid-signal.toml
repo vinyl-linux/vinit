@@ -1,0 +1,5 @@
+type = "service"
+reload_signal = "SIGFOO"
+
+[grouping]
+name = "test"

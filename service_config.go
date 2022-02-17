@@ -2,13 +2,16 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"os/user"
 	"strconv"
+	"syscall"
 	"time"
 
 	"github.com/BurntSushi/toml"
 	"github.com/google/shlex"
 	"github.com/robfig/cron/v3"
+	"golang.org/x/sys/unix"
 )
 
 const (
@@ -35,6 +38,27 @@ func (s *ServiceType) UnmarshalText(text []byte) (err error) {
 	}
 
 	return
+}
+
+type ReloadSignal struct {
+	s os.Signal
+}
+
+func (r *ReloadSignal) UnmarshalText(text []byte) (err error) {
+	if len(text) == 0 {
+		r.s = syscall.SIGHUP
+
+		return nil
+	}
+
+	s := unix.SignalNum(string(text))
+	if s == 0 {
+		return fmt.Errorf("invalid signal %q", string(text))
+	}
+
+	r.s = s
+
+	return nil
 }
 
 type Args []string
@@ -115,12 +139,13 @@ type Command struct {
 }
 
 type ServiceConfig struct {
-	Type     ServiceType `toml:"type"`
-	User     User        `toml:"user"`
-	Grouping Grouping    `toml:"grouping"`
-	Cron     *Cron       `toml:"cron,omitempty"`
-	Oneoff   *Oneoff     `toml:"oneoff,omitemoty"`
-	Command  Command     `toml:"command"`
+	Type         ServiceType   `toml:"type"`
+	ReloadSignal *ReloadSignal `toml:"reload_signal"`
+	User         User          `toml:"user"`
+	Grouping     Grouping      `toml:"grouping"`
+	Cron         *Cron         `toml:"cron,omitempty"`
+	Oneoff       *Oneoff       `toml:"oneoff,omitemoty"`
+	Command      Command       `toml:"command"`
 }
 
 func LoadServiceConfig(fn string) (s ServiceConfig, err error) {
@@ -156,6 +181,12 @@ func LoadServiceConfig(fn string) (s ServiceConfig, err error) {
 
 	if s.User.Group == "" {
 		s.User.Group = s.User.User
+	}
+
+	if s.ReloadSignal == nil || s.ReloadSignal.s == nil {
+		s.ReloadSignal = &ReloadSignal{
+			s: syscall.SIGHUP,
+		}
 	}
 
 	return

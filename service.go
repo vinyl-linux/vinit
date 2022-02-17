@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -33,6 +34,12 @@ type Service struct {
 	// The following get set on Service.Start()
 	status ServiceStatus
 	proc   *exec.Cmd
+
+	// Service.Stop() sets this 'desired state' value
+	// before killing the process. When the Start() loop
+	// kicks in, it checks whether this value is true
+	// prior to restarting
+	desiredRunning bool
 }
 
 func LoadService(dir string) (s *Service, err error) {
@@ -61,6 +68,13 @@ func LoadService(dir string) (s *Service, err error) {
 	s.gid = uint32(gid)
 
 	s.bin = filepath.Join(dir, "bin")
+	err = s.validateBin()
+	if err != nil {
+		err = fmt.Errorf("file %s must exist and be an executable", s.bin)
+
+		return
+	}
+
 	s.wd = filepath.Join(dir, "wd")
 	s.logdir = filepath.Join(dir, "logs")
 
@@ -68,19 +82,34 @@ func LoadService(dir string) (s *Service, err error) {
 }
 
 func (s *Service) Start() (err error) {
+	if s.isRunning() {
+		return fmt.Errorf("service is already running")
+	}
+
+	defer func() {
+		s.proc = nil
+	}()
+
+	s.status.Running = true
 	s.status = ServiceStatus{
 		StartTime: time.Now(),
 	}
 
 	go func() {
-		for {
+		var cont = true
+		for cont {
 			s.status.Running = true
+
 			s.status.Error = s.start()
+
+			cont = s.desiredRunning
+
 			if s.Config.Type == ServiceType_Oneoff {
 				s.status.Success = s.Config.Oneoff.Success(s.status.ExitStatus)
 
 				return
 			}
+
 		}
 	}()
 
@@ -105,17 +134,37 @@ func (s *Service) start() (err error) {
 		}
 	}
 
-	return s.runloop()
+	err = s.proc.Start()
+	if err != nil {
+		return
+	}
+
+	s.status.Pid = s.proc.Process.Pid
+
+	err = s.proc.Wait()
+
+	s.status.Running = false
+	s.status.EndTime = time.Now()
+	s.status.ExitStatus = s.proc.ProcessState.ExitCode()
+	s.proc = nil
+
+	return
 }
 
 func (s *Service) Stop() (err error) {
+	if !s.isRunning() {
+		return fmt.Errorf("service is not running")
+	}
+
+	s.desiredRunning = false
+	s.status.EndTime = time.Now()
+
 	err = s.proc.Process.Kill()
 	if err != nil {
 		return
 	}
 
 	s.status.Running = false
-	s.status.EndTime = time.Now()
 	s.status.ExitStatus = s.proc.ProcessState.ExitCode()
 
 	return
@@ -123,6 +172,18 @@ func (s *Service) Stop() (err error) {
 
 func (s *Service) Status() (status ServiceStatus, err error) {
 	return s.status, nil
+}
+
+func (s *Service) Reload() (err error) {
+	if !s.isRunning() {
+		return fmt.Errorf("service is not running")
+	}
+
+	return s.proc.Process.Signal(s.Config.ReloadSignal.s)
+}
+
+func (s Service) isRunning() bool {
+	return s.proc != nil && s.proc.Process != nil
 }
 
 func (s *Service) mkLogdir() error {
@@ -141,20 +202,19 @@ func (s *Service) streamStderr() (err error) {
 	return
 }
 
-func (s *Service) runloop() (err error) {
-	err = s.proc.Start()
+func (s Service) validateBin() (err error) {
+	f, err := os.Stat(s.bin)
 	if err != nil {
-		return
+		return fmt.Errorf("could not open file %s", s.bin)
 	}
 
-	s.status.Pid = s.proc.Process.Pid
+	if !f.Mode().IsRegular() {
+		return fmt.Errorf("file %s is not a regular file", s.bin)
+	}
 
-	err = s.proc.Wait()
-	s.proc.Process.Release()
-
-	s.status.Running = false
-	s.status.EndTime = time.Now()
-	s.status.ExitStatus = s.proc.ProcessState.ExitCode()
+	if f.Mode()&0111 == 0 {
+		return fmt.Errorf("file %s is not executable", s.bin)
+	}
 
 	return
 }

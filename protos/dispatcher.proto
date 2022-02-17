@@ -10,10 +10,11 @@ service Dispatcher {
   rpc Start(Service) returns (google.protobuf.Empty) {}
   rpc Stop(Service) returns (google.protobuf.Empty) {}
   rpc Status(Service) returns (ServiceStatus) {}
+  rpc Reload(Service) returns (google.protobuf.Empty) {}
 
   // vinit related operations
-  rpc Reload(google.protobuf.Empty) returns (google.protobuf.Empty) {}
-  rpc StatusAll(google.protobuf.Empty) returns (stream ServiceStatus) {}
+  rpc ReadConfigs(google.protobuf.Empty) returns (google.protobuf.Empty) {}
+  rpc SystemStatus(google.protobuf.Empty) returns (stream ServiceStatus) {}
 }
 
 message Service {

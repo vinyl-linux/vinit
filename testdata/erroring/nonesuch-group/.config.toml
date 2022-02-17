@@ -5,8 +5,7 @@ type = "service"
 reload_signal = "SIGHUP"
 
 [user]
-user = "jspc"
-group = "jspc"
+group = "this-user-does-not-exist"
 
 [grouping]
 name = "system"

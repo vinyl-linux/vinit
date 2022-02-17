@@ -11,4 +11,3 @@ name = "system"
 valid_exit_codes = [0]
 
 [command]
-args = "-a -b -c 100"

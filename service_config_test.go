@@ -20,9 +20,11 @@ func TestServiceConfig(t *testing.T) {
 		{"invalid cron schedule", "testdata/erroring/invalid-cron.toml", true},
 		{"missing oneoff", "testdata/erroring/missing-oneoff.toml", true},
 		{"missing group name", "testdata/erroring/missing-groupname.toml", true},
+		{"invalid signal errors out", "testdata/erroring/invalid-signal.toml", true},
 		{"missing args is fine", "testdata/successing/missing-args.toml", false},
 		{"missing user sets user to root", "testdata/successing/missing-user.toml", false},
 		{"empty validcodes gets a default", "testdata/successing/empty-validcodes.toml", false},
+		{"empty reload signal gets a default", "testdata/successing/empty-reloadsignal.toml", false},
 
 		// minimal viable configs
 		{"minimal viable service", "testdata/mvs/service.toml", false},
