@@ -50,7 +50,7 @@ jobs:
         fetch-depth: 0
 
     - name: Test
-      run: go test -covermode=count -coverprofile=coverage.out ./...
+      run: make test
 
     - name: SonarCloud Scan
       uses: sonarsource/sonarcloud-github-action@master
