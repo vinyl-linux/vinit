@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/tls"
 	"net"
 	"os"
 
@@ -10,6 +11,7 @@ import (
 	"github.com/vinyl-linux/vinit/dispatcher"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/reflection"
 )
 
@@ -39,7 +41,7 @@ func main() {
 
 	srv := Setup()
 
-	lis, err := net.Listen("unix", sockAddr)
+	lis, err := net.Listen("tcp", sockAddr)
 	if err != nil {
 		sugar.Panic(err)
 	}
@@ -53,6 +55,11 @@ func Setup() *grpc.Server {
 		panic(err)
 	}
 
+	tlsCredentials, err := loadTLSCredentials()
+	if err != nil {
+		sugar.Panic(err)
+	}
+
 	err = supervisor.StartAll()
 	if err != nil {
 		panic(err)
@@ -61,6 +68,7 @@ func Setup() *grpc.Server {
 	d := Dispatcher{supervisor, dispatcher.UnimplementedDispatcherServer{}}
 
 	grpcServer := grpc.NewServer(
+		grpc.Creds(tlsCredentials),
 		grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(
 			grpc_ctxtags.StreamServerInterceptor(),
 			grpc_zap.StreamServerInterceptor(logger),
@@ -84,4 +92,21 @@ func envOrDefault(envvar, def string) string {
 	}
 
 	return def
+}
+
+func loadTLSCredentials() (credentials.TransportCredentials, error) {
+	// Load server's certificate and private key
+	serverCert, err := tls.LoadX509KeyPair("certs/server-cert.pem", "certs/server-key.pem")
+	if err != nil {
+		return nil, err
+	}
+
+	// Create the credentials and return it
+	config := &tls.Config{
+		Certificates: []tls.Certificate{serverCert},
+		ClientAuth:   tls.NoClientCert,
+		MinVersion:   tls.VersionTLS12,
+	}
+
+	return credentials.NewTLS(config), nil
 }

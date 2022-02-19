@@ -111,7 +111,7 @@ func (s *Supervisor) StartAll() (err error) {
 	}
 
 	// fuck it, stop and wait
-	time.Sleep(time.Second)
+	time.Sleep(time.Second * 10)
 
 	return
 }
