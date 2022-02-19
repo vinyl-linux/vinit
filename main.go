@@ -51,6 +51,11 @@ func Setup() *grpc.Server {
 		panic(err)
 	}
 
+	err = supervisor.StartAll()
+	if err != nil {
+		panic(err)
+	}
+
 	d := Dispatcher{supervisor, dispatcher.UnimplementedDispatcherServer{}}
 
 	grpcServer := grpc.NewServer(
