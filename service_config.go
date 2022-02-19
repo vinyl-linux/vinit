@@ -150,6 +150,9 @@ type ServiceConfig struct {
 
 func LoadServiceConfig(fn string) (s ServiceConfig, err error) {
 	_, err = toml.DecodeFile(fn, &s)
+	if err != nil {
+		return
+	}
 
 	switch s.Type {
 	case ServiceType_Service:

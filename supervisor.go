@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -11,6 +12,8 @@ var (
 )
 
 type Supervisor struct {
+	Config Config
+
 	dir            string
 	groupsServices map[string][]string
 	services       map[string]*Service
@@ -27,6 +30,11 @@ func New(dir string) (s *Supervisor, err error) {
 }
 
 func (s *Supervisor) LoadConfigs() (err error) {
+	s.Config, err = LoadConfig(filepath.Join(s.dir, ".config.toml"))
+	if err != nil {
+		return
+	}
+
 	groupsServices := make(map[string][]string)
 	services := make(map[string]*Service)
 
@@ -48,7 +56,7 @@ func (s *Supervisor) LoadConfigs() (err error) {
 		}
 
 		name := serviceName(entry.Name())
-		groupName := svc.Config.Grouping.GroupName
+		groupName := s.Config.ReconcileOverride(name, svc.Config.Grouping.GroupName)
 		_, ok := groupsServices[groupName]
 		if !ok {
 			groupsServices[groupName] = make([]string, 0)
@@ -78,6 +86,26 @@ func (s *Supervisor) Stop(name string) error {
 
 func (s *Supervisor) Reload(name string) error {
 	return s.services[name].Reload()
+}
+
+func (s *Supervisor) StartAll() (err error) {
+	for _, group := range s.Config.Groups {
+		services, ok := s.groupsServices[group]
+		if !ok {
+			log.Printf("warn: group %s has no services", group)
+
+			continue
+		}
+
+		for _, service := range services {
+			err = s.Start(service)
+			if err != nil {
+				return
+			}
+		}
+	}
+
+	return
 }
 
 func (s *Supervisor) StopAll() (err error) {
