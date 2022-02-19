@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"time"
 )
 
 var (
@@ -100,12 +101,17 @@ func (s *Supervisor) StartAll() (err error) {
 		}
 
 		for _, service := range services {
+			log.Printf("[%s] %s - starting", time.Now(), service)
+
 			err = s.Start(service)
 			if err != nil {
 				return
 			}
 		}
 	}
+
+	// fuck it, stop and wait
+	time.Sleep(time.Second)
 
 	return
 }
