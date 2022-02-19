@@ -52,6 +52,8 @@ func (s *Supervisor) LoadConfigs() (err error) {
 
 		svc, err = LoadService(filepath.Join(s.dir, entry.Name()))
 		if err != nil {
+			log.Println(entry.Name())
+
 			return
 		}
 
