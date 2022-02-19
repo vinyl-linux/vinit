@@ -17,8 +17,8 @@ var (
 	logger *zap.Logger
 	sugar  *zap.SugaredLogger
 
-	sockAddr = "/tmp/vinit.sock"
-	svcDir   = os.Getenv("SVC_DIR")
+	sockAddr = "/run/vinit.sock"
+	svcDir   = envOrDefault("SVC_DIR", "/etc/vinit/services")
 )
 
 func init() {
@@ -37,12 +37,14 @@ func init() {
 func main() {
 	defer os.Remove(sockAddr)
 
+	srv := Setup()
+
 	lis, err := net.Listen("unix", sockAddr)
 	if err != nil {
 		sugar.Panic(err)
 	}
 
-	sugar.Panic(Setup().Serve(lis))
+	sugar.Panic(srv.Serve(lis))
 }
 
 func Setup() *grpc.Server {
@@ -73,4 +75,13 @@ func Setup() *grpc.Server {
 	reflection.Register(grpcServer)
 
 	return grpcServer
+}
+
+func envOrDefault(envvar, def string) string {
+	out, ok := os.LookupEnv(envvar)
+	if ok {
+		return out
+	}
+
+	return def
 }
