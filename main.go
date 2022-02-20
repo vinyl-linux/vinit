@@ -43,7 +43,7 @@ func main() {
 
 	srv := Setup()
 
-	lis, err := net.Listen("tcp", sockAddr)
+	lis, err := net.Listen("unix", sockAddr)
 	if err != nil {
 		sugar.Panic(err)
 	}
