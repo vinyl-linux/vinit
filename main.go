@@ -62,10 +62,7 @@ func Setup() *grpc.Server {
 		sugar.Panic(err)
 	}
 
-	err = supervisor.StartAll()
-	if err != nil {
-		panic(err)
-	}
+	supervisor.StartAll()
 
 	d := Dispatcher{supervisor, dispatcher.UnimplementedDispatcherServer{}}
 

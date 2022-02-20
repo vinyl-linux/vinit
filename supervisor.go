@@ -87,7 +87,9 @@ func (s *Supervisor) Reload(name string) error {
 	return s.services[name].Reload()
 }
 
-func (s *Supervisor) StartAll() (err error) {
+func (s *Supervisor) StartAll() {
+	var err error
+
 	for _, group := range s.Config.Groups {
 		services, ok := s.groupsServices[group]
 		if !ok {
@@ -122,8 +124,6 @@ func (s *Supervisor) StartAll() (err error) {
 
 		}
 	}
-
-	return
 }
 
 func (s *Supervisor) StopAll() (err error) {
