@@ -43,6 +43,11 @@ func main() {
 
 	srv := Setup()
 
+	if os.Getpid() == 1 {
+		// try to delete sockAddr, if it exists
+		os.Remove(sockAddr)
+	}
+
 	lis, err := net.Listen("unix", sockAddr)
 	if err != nil {
 		sugar.Panic(err)
