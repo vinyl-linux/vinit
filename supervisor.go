@@ -106,17 +106,13 @@ func (s *Supervisor) StartAll() (err error) {
 
 			err = s.Start(service, true)
 			if err != nil {
-				status, _ := s.Status(service)
-
-				sugar.Info(status.stdout)
-				sugar.Info(status.stderr)
-
-				sugar.Errorw(err.Error(),
+				sugar.Errorw("failed!",
 					"group", group,
 					"service", service,
+					"error", err.Error(),
 				)
 
-				return
+				continue
 			}
 
 			sugar.Infow("started!",

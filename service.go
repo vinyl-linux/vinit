@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
 	"os"
 	"os/exec"
@@ -18,9 +17,6 @@ type ServiceStatus struct {
 	EndTime    time.Time
 	Success    bool
 	Error      error
-
-	// temporarily do stuff
-	stdout, stderr string
 }
 
 type Service struct {
@@ -134,14 +130,16 @@ func (s *Service) start() (err error) {
 	s.proc.SysProcAttr = &syscall.SysProcAttr{}
 	s.proc.SysProcAttr.Credential = &syscall.Credential{Uid: uint32(s.uid), Gid: uint32(s.gid)}
 
-	for _, f := range []func() error{
-		s.mkLogdir,
-		s.streamStdout,
-		s.streamStderr,
-	} {
-		err = f()
-		if err != nil {
-			return
+	if !s.Config.Command.IgnoreOutput {
+		for _, f := range []func() error{
+			s.mkLogdir,
+			s.streamStdout,
+			s.streamStderr,
+		} {
+			err = f()
+			if err != nil {
+				return
+			}
 		}
 	}
 
@@ -157,8 +155,6 @@ func (s *Service) start() (err error) {
 	s.status.Running = false
 	s.status.EndTime = time.Now()
 	s.status.ExitStatus = s.proc.ProcessState.ExitCode()
-	s.status.stdout = s.proc.Stdout.(*bytes.Buffer).String()
-	s.status.stderr = s.proc.Stderr.(*bytes.Buffer).String()
 
 	s.proc = nil
 
@@ -205,17 +201,13 @@ func (s *Service) mkLogdir() error {
 }
 
 func (s *Service) streamStdout() (err error) {
-	//s.proc.Stdout, err = os.OpenFile(filepath.Join(s.logdir, "stdout"), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
-
-	s.proc.Stdout = new(bytes.Buffer)
+	s.proc.Stdout, err = os.OpenFile(filepath.Join(s.logdir, "stdout"), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
 
 	return
 }
 
 func (s *Service) streamStderr() (err error) {
-	//s.proc.Stderr, err = os.OpenFile(filepath.Join(s.logdir, "stderr"), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
-
-	s.proc.Stderr = new(bytes.Buffer)
+	s.proc.Stderr, err = os.OpenFile(filepath.Join(s.logdir, "stderr"), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
 
 	return
 }
