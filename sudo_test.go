@@ -26,7 +26,7 @@ func TestService_Run(t *testing.T) {
 		}
 	}()
 
-	err = s.Start()
+	err = s.Start(false)
 	if err != nil {
 		t.Errorf("unexpected error %#v", err)
 	}

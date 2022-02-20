@@ -19,6 +19,7 @@ type Supervisor struct {
 	dir            string
 	groupsServices map[string][]string
 	services       map[string]*Service
+	restartShell   bool
 }
 
 func New(dir string) (s *Supervisor, err error) {
@@ -132,7 +133,13 @@ func (s *Supervisor) StartAll() {
 func (s *Supervisor) RunShell() {
 	sc := s.Config.StartupScript
 
-	for {
+	// Keep restarting shell if it crashes
+	//
+	// This is used during shutdown, for instance,
+	// to stop the inital shell constantly restarting
+	s.restartShell = true
+
+	for s.restartShell {
 		c := exec.Command(sc.cmd, sc.args...)
 		c.Env = os.Environ()
 		c.Dir = "/"
