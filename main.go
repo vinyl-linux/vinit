@@ -41,7 +41,7 @@ func init() {
 func main() {
 	defer os.Remove(sockAddr)
 
-	srv := Setup()
+	srv, supervisor := Setup()
 
 	if os.Getpid() == 1 {
 		// try to delete sockAddr, if it exists
@@ -53,13 +53,15 @@ func main() {
 		sugar.Panic(err)
 	}
 
+	go supervisor.RunShell()
+
 	sugar.Panic(srv.Serve(lis))
 }
 
-func Setup() *grpc.Server {
+func Setup() (grpcServer *grpc.Server, supervisor *Supervisor) {
 	supervisor, err := New(svcDir)
 	if err != nil {
-		panic(err)
+		sugar.Panic(err)
 	}
 
 	tlsCredentials, err := loadTLSCredentials()
@@ -71,7 +73,7 @@ func Setup() *grpc.Server {
 
 	d := Dispatcher{supervisor, dispatcher.UnimplementedDispatcherServer{}}
 
-	grpcServer := grpc.NewServer(
+	grpcServer = grpc.NewServer(
 		grpc.Creds(tlsCredentials),
 		grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(
 			grpc_ctxtags.StreamServerInterceptor(),
@@ -86,7 +88,7 @@ func Setup() *grpc.Server {
 	dispatcher.RegisterDispatcherServer(grpcServer, d)
 	reflection.Register(grpcServer)
 
-	return grpcServer
+	return
 }
 
 func envOrDefault(envvar, def string) string {

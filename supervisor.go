@@ -2,8 +2,11 @@ package main
 
 import (
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
+	"strings"
+	"time"
 )
 
 var (
@@ -123,6 +126,31 @@ func (s *Supervisor) StartAll() {
 			)
 
 		}
+	}
+}
+
+func (s *Supervisor) RunShell() {
+	sc := s.Config.StartupScript
+
+	for {
+		c := exec.Command(sc.cmd, sc.args...)
+		c.Env = os.Environ()
+		c.Dir = "/"
+
+		c.Stdin = os.Stdin
+		c.Stdout = os.Stdout
+		c.Stderr = os.Stderr
+
+		err := c.Run()
+		if err != nil {
+			sugar.Errorw("shell restarting",
+				"cmd", sc.cmd,
+				"args", strings.Join(sc.args, " "),
+				"error", err.Error(),
+			)
+		}
+
+		time.Sleep(time.Second)
 	}
 }
 
