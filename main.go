@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"net"
 	"os"
+	"path/filepath"
 
 	"github.com/grpc-ecosystem/go-grpc-middleware"
 	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
@@ -21,6 +22,7 @@ var (
 
 	sockAddr = "/run/vinit.sock"
 	svcDir   = envOrDefault("SVC_DIR", "/etc/vinit/services")
+	certDir  = "certs"
 )
 
 func init() {
@@ -96,7 +98,7 @@ func envOrDefault(envvar, def string) string {
 
 func loadTLSCredentials() (credentials.TransportCredentials, error) {
 	// Load server's certificate and private key
-	serverCert, err := tls.LoadX509KeyPair("certs/server-cert.pem", "certs/server-key.pem")
+	serverCert, err := tls.LoadX509KeyPair(filepath.Join(certDir, "server-cert.pem"), filepath.Join(certDir, "server-key.pem"))
 	if err != nil {
 		return nil, err
 	}
