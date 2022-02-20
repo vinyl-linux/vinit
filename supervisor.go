@@ -140,7 +140,7 @@ func (s *Supervisor) RunShell() {
 	s.restartShell = true
 
 	for s.restartShell {
-		c := exec.Command(sc.cmd, sc.args...)
+		c := exec.Command(sc.cmd, sc.args...) //#nosec: G204
 		c.Env = os.Environ()
 		c.Dir = "/"
 

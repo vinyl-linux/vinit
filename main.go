@@ -44,8 +44,12 @@ func main() {
 	srv, supervisor := Setup()
 
 	if os.Getpid() == 1 {
-		// try to delete sockAddr, if it exists
-		os.Remove(sockAddr)
+		// try to delete sockAddr, if it exists.
+		//
+		// we don't care about the outcome of this; if the file doesn't
+		// exist then happy days, otherwise we'll get a more useful error
+		// when we try to listen anyway
+		os.Remove(sockAddr) //#nosec: G104
 	}
 
 	lis, err := net.Listen("unix", sockAddr)
