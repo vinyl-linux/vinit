@@ -1,11 +1,9 @@
 package main
 
 import (
-	"log"
 	"os"
 	"path/filepath"
 	"regexp"
-	"time"
 )
 
 var (
@@ -53,8 +51,6 @@ func (s *Supervisor) LoadConfigs() (err error) {
 
 		svc, err = LoadService(filepath.Join(s.dir, entry.Name()))
 		if err != nil {
-			log.Println(entry.Name())
-
 			return
 		}
 
@@ -75,8 +71,8 @@ func (s *Supervisor) LoadConfigs() (err error) {
 	return
 }
 
-func (s *Supervisor) Start(name string) error {
-	return s.services[name].Start()
+func (s *Supervisor) Start(name string, wait bool) error {
+	return s.services[name].Start(wait)
 }
 
 func (s *Supervisor) Status(name string) (ServiceStatus, error) {
@@ -95,23 +91,30 @@ func (s *Supervisor) StartAll() (err error) {
 	for _, group := range s.Config.Groups {
 		services, ok := s.groupsServices[group]
 		if !ok {
-			log.Printf("warn: group %s has no services", group)
+			sugar.Errorw("group either has no services or does not exist",
+				"group", group,
+			)
 
 			continue
 		}
 
 		for _, service := range services {
-			log.Printf("[%s] %s - starting", time.Now(), service)
+			sugar.Infow("starting",
+				"group", group,
+				"service", service,
+			)
 
-			err = s.Start(service)
+			err = s.Start(service, true)
 			if err != nil {
+				sugar.Errorw(err.Error(),
+					"group", group,
+					"service", service,
+				)
+
 				return
 			}
 		}
 	}
-
-	// fuck it, stop and wait
-	time.Sleep(time.Second * 10)
 
 	return
 }

@@ -81,7 +81,7 @@ func LoadService(dir string) (s *Service, err error) {
 	return
 }
 
-func (s *Service) Start() (err error) {
+func (s *Service) Start(wait bool) (err error) {
 	if s.isRunning() {
 		return fmt.Errorf("service is already running")
 	}
@@ -93,6 +93,13 @@ func (s *Service) Start() (err error) {
 	s.status.Running = true
 	s.status = ServiceStatus{
 		StartTime: time.Now(),
+	}
+
+	if s.Config.Type == ServiceType_Oneoff && wait {
+		s.status.Error = s.start()
+		s.status.Success = s.Config.Oneoff.Success(s.status.ExitStatus)
+
+		return s.status.Error
 	}
 
 	go func() {
