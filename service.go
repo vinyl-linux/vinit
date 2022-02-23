@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -138,7 +139,7 @@ func (s *Service) start() (err error) {
 		} {
 			err = f()
 			if err != nil {
-				return
+				continue
 			}
 		}
 	}
@@ -202,12 +203,18 @@ func (s *Service) mkLogdir() error {
 
 func (s *Service) streamStdout() (err error) {
 	s.proc.Stdout, err = os.OpenFile(filepath.Join(s.logdir, "stdout"), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
+	if err != nil {
+		s.proc.Stdout = io.Discard
+	}
 
 	return
 }
 
 func (s *Service) streamStderr() (err error) {
 	s.proc.Stderr, err = os.OpenFile(filepath.Join(s.logdir, "stderr"), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
+	if err != nil {
+		s.proc.Stderr = io.Discard
+	}
 
 	return
 }
