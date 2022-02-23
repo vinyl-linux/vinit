@@ -41,7 +41,7 @@ func init() {
 func main() {
 	defer os.Remove(sockAddr)
 
-	srv, supervisor := Setup()
+	srv, _ := Setup()
 
 	if os.Getpid() == 1 {
 		// try to delete sockAddr, if it exists.
@@ -56,8 +56,6 @@ func main() {
 	if err != nil {
 		sugar.Panic(err)
 	}
-
-	go supervisor.RunShell()
 
 	sugar.Panic(srv.Serve(lis))
 }
