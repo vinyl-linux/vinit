@@ -26,7 +26,7 @@ $(CERTS): | $(CERTS_DIR)
 	(cd $(CERTS_DIR) && $(CURDIR)/scripts/gen-cert)
 
 
-$(BINARY): $(GRPC_FILES) $(CERTS) *.go go.mod go.sum
+$(BINARY): $(GRPC_FILES) *.go go.mod go.sum
 	CGO_ENABLED=0 go build -ldflags="-s -w -X main.certDir=$(CERTS_DIR)" -trimpath -o $@
 
 
