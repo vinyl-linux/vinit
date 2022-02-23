@@ -1,0 +1,4 @@
+type = "service"
+
+[grouping]
+name = "user"

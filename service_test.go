@@ -2,6 +2,7 @@ package main
 
 import (
 	"testing"
+	"time"
 )
 
 func TestLoadService(t *testing.T) {
@@ -30,4 +31,48 @@ func TestLoadService(t *testing.T) {
 
 		})
 	}
+}
+
+func TestService_Start_UnableToWriteLogs(t *testing.T) {
+	defer func() {
+		err := recover()
+		if err != nil {
+			t.Fatal(err)
+		}
+	}()
+
+	s, err := LoadService("testdata/erroring/logs-unwritable")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = s.Start(false)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Give service time to start
+	time.Sleep(time.Millisecond * 100)
+}
+
+func TestService_Start_UnableToCreateLogs(t *testing.T) {
+	defer func() {
+		err := recover()
+		if err != nil {
+			t.Fatal(err)
+		}
+	}()
+
+	s, err := LoadService("testdata/erroring/logdir-uncreatable")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = s.Start(false)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Give service time to start
+	time.Sleep(time.Millisecond * 100)
 }
