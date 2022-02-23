@@ -9,19 +9,18 @@ CERTS := $(CERTS_DIR)/ca-key.pem     \
 	 $(CERTS_DIR)/server-req.pem \
 	 $(CERTS_DIR)/server-cert.pem
 
+PKG_DIR := vinit-x86_64
+
 BINARY := vinit
 TEST_BINARY := vinit-test
 
 default: $(GRPC_FILES) $(CERTS) $(BINARY)
 
-$(SERVER_DIR):
+$(SERVER_DIR) $(CERTS_DIR) $(GENERATED_DIR) $(PKG_DIR):
 	mkdir -p $@
 
 $(SERVER_DIR)/%.pb.go $(SERVER_DIR)/%_grpc.pb.go: protos/%.proto | $(SERVER_DIR)
 	protoc -I protos/ $< --go_out=module=github.com/vinyl-linux/vinit/dispatcher:$(SERVER_DIR) --go-grpc_out=module=github.com/vinyl-linux/vinit/dispatcher:$(SERVER_DIR)
-
-$(CERTS_DIR) $(GENERATED_DIR):
-	mkdir -p $@
 
 $(CERTS): | $(CERTS_DIR)
 	(cd $(CERTS_DIR) && $(CURDIR)/scripts/gen-cert)
@@ -46,3 +45,9 @@ $(TEST_BINARY): $(GRPC_FILES) $(CERTS) *.go go.mod go.sum
 test: $(TEST_BINARY)
 	sudo ./$< -test.coverprofile=count.out -test.v
 	-go tool cover -html=count.out
+
+.PHONY: package
+package: $(BINARY) | $(PKG_DIR) ./scripts
+	install -m 0700 $< $(PKG_DIR)
+	cp -r scripts $(PKG_DIR)
+	cp Makefile $(PKG_DIR)
