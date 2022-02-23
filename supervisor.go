@@ -1,10 +1,12 @@
 package main
 
 import (
-	"log"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
+	"strings"
+	"time"
 )
 
 var (
@@ -17,6 +19,7 @@ type Supervisor struct {
 	dir            string
 	groupsServices map[string][]string
 	services       map[string]*Service
+	restartShell   bool
 }
 
 func New(dir string) (s *Supervisor, err error) {
@@ -72,8 +75,8 @@ func (s *Supervisor) LoadConfigs() (err error) {
 	return
 }
 
-func (s *Supervisor) Start(name string) error {
-	return s.services[name].Start()
+func (s *Supervisor) Start(name string, wait bool) error {
+	return s.services[name].Start(wait)
 }
 
 func (s *Supervisor) Status(name string) (ServiceStatus, error) {
@@ -88,24 +91,74 @@ func (s *Supervisor) Reload(name string) error {
 	return s.services[name].Reload()
 }
 
-func (s *Supervisor) StartAll() (err error) {
+func (s *Supervisor) StartAll() {
+	var err error
+
 	for _, group := range s.Config.Groups {
 		services, ok := s.groupsServices[group]
 		if !ok {
-			log.Printf("warn: group %s has no services", group)
+			sugar.Errorw("group either has no services or does not exist",
+				"group", group,
+			)
 
 			continue
 		}
 
 		for _, service := range services {
-			err = s.Start(service)
+			sugar.Infow("starting",
+				"group", group,
+				"service", service,
+			)
+
+			err = s.Start(service, true)
 			if err != nil {
-				return
+				sugar.Errorw("failed!",
+					"group", group,
+					"service", service,
+					"error", err.Error(),
+				)
+
+				continue
 			}
+
+			sugar.Infow("started!",
+				"group", group,
+				"service", service,
+			)
+
 		}
 	}
+}
 
-	return
+func (s *Supervisor) RunShell() {
+	sc := s.Config.StartupScript
+
+	// Keep restarting shell if it crashes
+	//
+	// This is used during shutdown, for instance,
+	// to stop the inital shell constantly restarting
+	s.restartShell = true
+
+	for s.restartShell {
+		c := exec.Command(sc.cmd, sc.args...) //#nosec: G204
+		c.Env = os.Environ()
+		c.Dir = "/"
+
+		c.Stdin = os.Stdin
+		c.Stdout = os.Stdout
+		c.Stderr = os.Stderr
+
+		err := c.Run()
+		if err != nil {
+			sugar.Errorw("shell restarting",
+				"cmd", sc.cmd,
+				"args", strings.Join(sc.args, " "),
+				"error", err.Error(),
+			)
+		}
+
+		time.Sleep(time.Second)
+	}
 }
 
 func (s *Supervisor) StopAll() (err error) {

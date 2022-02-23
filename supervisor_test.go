@@ -3,6 +3,7 @@ package main
 import (
 	"reflect"
 	"testing"
+	"time"
 )
 
 func TestNew(t *testing.T) {
@@ -21,4 +22,25 @@ func TestNew(t *testing.T) {
 			t.Errorf("expected\n%#v\n\nreceived%#v", expect, got)
 		}
 	})
+}
+
+func TestSupervisor_RunShell_RunsWithoutPanic(t *testing.T) {
+	s, err := New("testdata/services")
+	if err != nil {
+		t.Errorf("unexpected error %#v", err)
+	}
+
+	defer func() {
+		err := recover()
+		if err != nil {
+			t.Errorf("unexpected error: %#v", err)
+		}
+	}()
+
+	go s.RunShell()
+
+	// give the shell time to do stuff
+	time.Sleep(time.Millisecond * 100)
+
+	s.restartShell = false
 }

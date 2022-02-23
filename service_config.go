@@ -135,7 +135,8 @@ func (o Oneoff) Success(exitCode int) bool {
 }
 
 type Command struct {
-	Args Args `toml:"args"`
+	Args         Args `toml:"args"`
+	IgnoreOutput bool `toml:"ignore_output"`
 }
 
 type ServiceConfig struct {

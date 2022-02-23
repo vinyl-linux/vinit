@@ -81,7 +81,7 @@ func LoadService(dir string) (s *Service, err error) {
 	return
 }
 
-func (s *Service) Start() (err error) {
+func (s *Service) Start(wait bool) (err error) {
 	if s.isRunning() {
 		return fmt.Errorf("service is already running")
 	}
@@ -93,6 +93,13 @@ func (s *Service) Start() (err error) {
 	s.status.Running = true
 	s.status = ServiceStatus{
 		StartTime: time.Now(),
+	}
+
+	if s.Config.Type == ServiceType_Oneoff && wait {
+		s.status.Error = s.start()
+		s.status.Success = s.Config.Oneoff.Success(s.status.ExitStatus)
+
+		return s.status.Error
 	}
 
 	go func() {
@@ -123,14 +130,16 @@ func (s *Service) start() (err error) {
 	s.proc.SysProcAttr = &syscall.SysProcAttr{}
 	s.proc.SysProcAttr.Credential = &syscall.Credential{Uid: uint32(s.uid), Gid: uint32(s.gid)}
 
-	for _, f := range []func() error{
-		s.mkLogdir,
-		s.streamStdout,
-		s.streamStderr,
-	} {
-		err = f()
-		if err != nil {
-			return
+	if !s.Config.Command.IgnoreOutput {
+		for _, f := range []func() error{
+			s.mkLogdir,
+			s.streamStdout,
+			s.streamStderr,
+		} {
+			err = f()
+			if err != nil {
+				return
+			}
 		}
 	}
 
@@ -146,6 +155,7 @@ func (s *Service) start() (err error) {
 	s.status.Running = false
 	s.status.EndTime = time.Now()
 	s.status.ExitStatus = s.proc.ProcessState.ExitCode()
+
 	s.proc = nil
 
 	return

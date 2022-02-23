@@ -27,7 +27,7 @@ func (d Dispatcher) Start(ctx context.Context, s *dispatcher.Service) (out *empt
 		return out, errNoService
 	}
 
-	return out, d.s.Start(s.Name)
+	return out, d.s.Start(s.Name, false)
 }
 
 func (d Dispatcher) Stop(ctx context.Context, s *dispatcher.Service) (out *emptypb.Empty, err error) {

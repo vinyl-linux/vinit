@@ -1,1 +1,3 @@
 groups = ["system", "my-group", "etc"]
+
+startup_script = "/bin/date"

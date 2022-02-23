@@ -24,11 +24,11 @@ $(CERTS_DIR) $(GENERATED_DIR):
 	mkdir -p $@
 
 $(CERTS): | $(CERTS_DIR)
-	(cd $(CERTS_DIR) && ../scripts/gen-cert)
+	(cd $(CERTS_DIR) && $(CURDIR)/scripts/gen-cert)
 
 
 $(BINARY): $(GRPC_FILES) $(CERTS) *.go go.mod go.sum
-	CGO_ENABLED=0 go build -ldflags="-s -w" -trimpath -o $@
+	CGO_ENABLED=0 go build -ldflags="-s -w -X main.certDir=$(CERTS_DIR)" -trimpath -o $@
 
 
 # Because we need to do things like setuid on binaries, we need
