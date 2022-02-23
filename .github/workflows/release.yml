@@ -1,0 +1,28 @@
+name: Release
+
+on:
+  release:
+    types: [created, edited]
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - uses: actions/setup-go@v2
+      with:
+        go-version: 1.17
+
+    - name: Package
+      run: |
+        make package
+        tar cvvjf vinit-x86_64.tar.bz2 vinit-x86_64
+
+    - name: Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          vinit-x86_64.tar.bz2
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
