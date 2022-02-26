@@ -15,6 +15,7 @@ service Dispatcher {
   // vinit related operations
   rpc ReadConfigs(google.protobuf.Empty) returns (google.protobuf.Empty) {}
   rpc SystemStatus(google.protobuf.Empty) returns (stream ServiceStatus) {}
+  rpc Version(google.protobuf.Empty) returns (VersionMessage) {}
 
   // shutdown (etc.) commands
   rpc Shutdown(google.protobuf.Empty) returns (google.protobuf.Empty) {}
@@ -35,4 +36,13 @@ message ServiceStatus {
   google.protobuf.Timestamp end_time = 6;
   bool success = 7;
   string error = 8;
+}
+
+message VersionMessage {
+  string ref = 1;
+  string build_user = 2;
+
+  // We store this as a string, rather than a datetime, because
+  // we never need to do anything clever with it, beyond showing it
+  string built_on = 3;
 }
