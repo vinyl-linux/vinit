@@ -130,6 +130,30 @@ func (s *Supervisor) StartAll() {
 	}
 }
 
+// StopAll does the opposite of StartAll; it reverses the order of
+// s.Config.Groups, then reverses the order of those services in order
+// to stop them all
+func (s *Supervisor) StopAll() (err error) {
+	var svc *Service
+
+	for _, group := range reverse(s.Config.Groups) {
+		for _, svcName := range reverse(s.groupsServices[group]) {
+			svc = s.services[svcName]
+
+			if svc == nil || !svc.isRunning() {
+				continue
+			}
+
+			err = s.Stop(svcName)
+			if err != nil {
+				return
+			}
+		}
+	}
+
+	return
+}
+
 func (s *Supervisor) RunShell() {
 	sc := s.Config.StartupScript
 
@@ -161,23 +185,22 @@ func (s *Supervisor) RunShell() {
 	}
 }
 
-func (s *Supervisor) StopAll() (err error) {
-	for _, svc := range s.services {
-		if svc.isRunning() {
-			err = svc.Stop()
-			if err != nil {
-				return
-			}
-		}
-	}
-
-	return
-}
-
 func serviceName(s string) string {
 	if !svcPrefix.Match([]byte(s)) {
 		return s
 	}
 
 	return svcPrefix.ReplaceAllString(s, "")
+}
+
+func reverse(in []string) (out []string) {
+	out = make([]string, len(in))
+	copy(out, in)
+
+	for i := len(out)/2 - 1; i >= 0; i-- {
+		opp := len(out) - 1 - i
+		out[i], out[opp] = out[opp], out[i]
+	}
+
+	return
 }

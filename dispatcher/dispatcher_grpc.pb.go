@@ -31,6 +31,10 @@ type DispatcherClient interface {
 	// vinit related operations
 	ReadConfigs(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	SystemStatus(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (Dispatcher_SystemStatusClient, error)
+	// shutdown (etc.) commands
+	Shutdown(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	Reboot(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	Halt(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
 
 type dispatcherClient struct {
@@ -118,6 +122,33 @@ func (x *dispatcherSystemStatusClient) Recv() (*ServiceStatus, error) {
 	return m, nil
 }
 
+func (c *dispatcherClient) Shutdown(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, "/Dispatcher/Shutdown", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *dispatcherClient) Reboot(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, "/Dispatcher/Reboot", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *dispatcherClient) Halt(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, "/Dispatcher/Halt", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // DispatcherServer is the server API for Dispatcher service.
 // All implementations must embed UnimplementedDispatcherServer
 // for forward compatibility
@@ -130,6 +161,10 @@ type DispatcherServer interface {
 	// vinit related operations
 	ReadConfigs(context.Context, *emptypb.Empty) (*emptypb.Empty, error)
 	SystemStatus(*emptypb.Empty, Dispatcher_SystemStatusServer) error
+	// shutdown (etc.) commands
+	Shutdown(context.Context, *emptypb.Empty) (*emptypb.Empty, error)
+	Reboot(context.Context, *emptypb.Empty) (*emptypb.Empty, error)
+	Halt(context.Context, *emptypb.Empty) (*emptypb.Empty, error)
 	mustEmbedUnimplementedDispatcherServer()
 }
 
@@ -154,6 +189,15 @@ func (UnimplementedDispatcherServer) ReadConfigs(context.Context, *emptypb.Empty
 }
 func (UnimplementedDispatcherServer) SystemStatus(*emptypb.Empty, Dispatcher_SystemStatusServer) error {
 	return status.Errorf(codes.Unimplemented, "method SystemStatus not implemented")
+}
+func (UnimplementedDispatcherServer) Shutdown(context.Context, *emptypb.Empty) (*emptypb.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Shutdown not implemented")
+}
+func (UnimplementedDispatcherServer) Reboot(context.Context, *emptypb.Empty) (*emptypb.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Reboot not implemented")
+}
+func (UnimplementedDispatcherServer) Halt(context.Context, *emptypb.Empty) (*emptypb.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Halt not implemented")
 }
 func (UnimplementedDispatcherServer) mustEmbedUnimplementedDispatcherServer() {}
 
@@ -279,6 +323,60 @@ func (x *dispatcherSystemStatusServer) Send(m *ServiceStatus) error {
 	return x.ServerStream.SendMsg(m)
 }
 
+func _Dispatcher_Shutdown_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(emptypb.Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DispatcherServer).Shutdown(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/Dispatcher/Shutdown",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DispatcherServer).Shutdown(ctx, req.(*emptypb.Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Dispatcher_Reboot_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(emptypb.Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DispatcherServer).Reboot(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/Dispatcher/Reboot",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DispatcherServer).Reboot(ctx, req.(*emptypb.Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Dispatcher_Halt_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(emptypb.Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DispatcherServer).Halt(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/Dispatcher/Halt",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DispatcherServer).Halt(ctx, req.(*emptypb.Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Dispatcher_ServiceDesc is the grpc.ServiceDesc for Dispatcher service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -305,6 +403,18 @@ var Dispatcher_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ReadConfigs",
 			Handler:    _Dispatcher_ReadConfigs_Handler,
+		},
+		{
+			MethodName: "Shutdown",
+			Handler:    _Dispatcher_Shutdown_Handler,
+		},
+		{
+			MethodName: "Reboot",
+			Handler:    _Dispatcher_Reboot_Handler,
+		},
+		{
+			MethodName: "Halt",
+			Handler:    _Dispatcher_Halt_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{
