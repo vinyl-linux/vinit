@@ -15,6 +15,11 @@ service Dispatcher {
   // vinit related operations
   rpc ReadConfigs(google.protobuf.Empty) returns (google.protobuf.Empty) {}
   rpc SystemStatus(google.protobuf.Empty) returns (stream ServiceStatus) {}
+
+  // shutdown (etc.) commands
+  rpc Shutdown(google.protobuf.Empty) returns (google.protobuf.Empty) {}
+  rpc Reboot(google.protobuf.Empty) returns (google.protobuf.Empty) {}
+  rpc Halt(google.protobuf.Empty) returns (google.protobuf.Empty) {}
 }
 
 message Service {
