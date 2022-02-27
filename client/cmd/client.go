@@ -2,14 +2,15 @@ package cmd
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
-	"net"
 	"net/url"
 	"path/filepath"
 	"time"
 
 	vinit "github.com/vinyl-linux/vinit/dispatcher"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
@@ -29,10 +30,11 @@ func newClient(addr string) (c client, err error) {
 	conn, err := grpc.DialContext(ctx,
 		resolvedAddr,
 		grpc.WithBlock(),
-		grpc.WithInsecure(),
-		grpc.WithDialer(func(addr string, timeout time.Duration) (net.Conn, error) {
-			return net.DialTimeout("unix", addr, timeout)
-		}))
+		grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{
+			MinVersion:         tls.VersionTLS12,
+			InsecureSkipVerify: true,
+		})),
+	)
 
 	if err != nil {
 		return
@@ -49,7 +51,16 @@ func parseAddr(addr string) (s string, err error) {
 		return
 	}
 
-	return filepath.EvalSymlinks(u.Path)
+	if u.Scheme == "unix" {
+		p := u.Path
+
+		u.Path, err = filepath.EvalSymlinks(p)
+		if err != nil {
+			return
+		}
+	}
+
+	return u.String(), nil
 }
 
 func (c client) start(svc string) (err error) {
