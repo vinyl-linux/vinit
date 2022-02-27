@@ -32,27 +32,50 @@ package cmd
 
 import (
 	"fmt"
+	"strings"
+	"time"
 
+	"github.com/fatih/color"
 	"github.com/spf13/cobra"
+	vinit "github.com/vinyl-linux/vinit/dispatcher"
 )
 
 // statusCmd represents the status command
 var statusCmd = &cobra.Command{
 	Use:   "status",
 	Short: "Status a service",
-	Args:  cobra.ExactArgs(1),
+	Args:  cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		c, err := newClient(socketAddr)
 		if err != nil {
 			return
 		}
 
-		status, err := c.status(args[0])
+		var status *vinit.ServiceStatus
+
+		if len(args) == 0 {
+			// systemstatus
+			var ss []*vinit.ServiceStatus
+
+			ss, err = c.systemStatus()
+			if err != nil {
+				return
+			}
+
+			for _, status = range ss {
+				fmt.Println(fmtStatus(status))
+			}
+
+			return
+		}
+
+		// specific service
+		status, err = c.status(args[0])
 		if err != nil {
 			return
 		}
 
-		fmt.Printf("%#v\n", status)
+		fmt.Println(fmtStatus(status))
 
 		return
 	},
@@ -60,14 +83,46 @@ var statusCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(statusCmd)
+}
 
-	// Here you will define your flags and configuration settings.
+func fmtStatus(s *vinit.ServiceStatus) string {
+	return fmt.Sprintf("%s: %s\n%s %s\n%s",
+		s.Svc.Name, runningStr(s.Running, s.Pid),
+		startStr(s.StartTime.AsTime()), endStr(s.EndTime.AsTime()),
+		completionDetails(s),
+	)
+}
 
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// statusCmd.PersistentFlags().String("foo", "", "A help for foo")
+func runningStr(b bool, pid uint32) string {
+	if b {
+		return color.HiGreenString("running") + fmt.Sprintf(" (pid: %d)", int(pid))
+	}
 
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// statusCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	return color.HiBlackString("not running")
+}
+
+func startStr(t time.Time) string {
+	return fmt.Sprintf("started at %s", t)
+}
+
+func endStr(t time.Time) string {
+	if t.String() == "0001-01-01 00:00:00 +0000 UTC" {
+		return ""
+	}
+
+	return fmt.Sprintf("completed at %s", t)
+}
+
+func completionDetails(s *vinit.ServiceStatus) string {
+	sb := new(strings.Builder)
+
+	if s.Success || s.ExitStatus != 0 {
+		sb.WriteString("last exit status " + string(s.ExitStatus) + "\n")
+	}
+
+	if s.Error != "" {
+		sb.WriteString(s.Error + "\n")
+	}
+
+	return sb.String()
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	"io"
 	"net/url"
 	"path/filepath"
 	"time"
@@ -89,6 +90,32 @@ func (c client) status(svc string) (status *vinit.ServiceStatus, err error) {
 	}
 
 	return c.c.Status(context.Background(), is)
+}
+
+func (c client) systemStatus() (statuses []*vinit.ServiceStatus, err error) {
+	statuses = make([]*vinit.ServiceStatus, 0)
+
+	sc, err := c.c.SystemStatus(context.Background(), new(emptypb.Empty))
+	if err != nil {
+		return
+	}
+
+	var status *vinit.ServiceStatus
+
+	for {
+		status, err = sc.Recv()
+		if err != nil {
+			if err == io.EOF {
+				err = nil
+			}
+
+			break
+		}
+
+		statuses = append(statuses, status)
+	}
+
+	return
 }
 
 func (c client) version() (out string, err error) {
