@@ -66,7 +66,7 @@ func Execute() {
 func init() {
 	cobra.OnInitialize(initConfig)
 
-	viper.SetEnvPrefix("vin")
+	viper.SetEnvPrefix("vinit")
 	viper.BindEnv("socket_addr")
 	viper.SetDefault("socket_addr", "unix:///run/vinit.sock")
 
