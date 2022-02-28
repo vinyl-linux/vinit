@@ -117,7 +117,7 @@ func completionDetails(s *vinit.ServiceStatus) string {
 	sb := new(strings.Builder)
 
 	if s.Success || s.ExitStatus != 0 {
-		sb.WriteString("last exit status " + string(s.ExitStatus) + "\n")
+		sb.WriteString("last exit status " + fmt.Sprint(s.ExitStatus) + "\n")
 	}
 
 	if s.Error != "" {
