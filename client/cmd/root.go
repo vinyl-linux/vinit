@@ -67,7 +67,12 @@ func init() {
 	cobra.OnInitialize(initConfig)
 
 	viper.SetEnvPrefix("vinit")
-	viper.BindEnv("socket_addr")
+
+	err := viper.BindEnv("socket_addr")
+	if err != nil {
+		panic(err)
+	}
+
 	viper.SetDefault("socket_addr", "unix:///run/vinit.sock")
 
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.vinit.yaml)")
