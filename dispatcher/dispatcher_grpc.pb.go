@@ -31,6 +31,7 @@ type DispatcherClient interface {
 	// vinit related operations
 	ReadConfigs(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	SystemStatus(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (Dispatcher_SystemStatusClient, error)
+	Version(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*VersionMessage, error)
 	// shutdown (etc.) commands
 	Shutdown(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	Reboot(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*emptypb.Empty, error)
@@ -122,6 +123,15 @@ func (x *dispatcherSystemStatusClient) Recv() (*ServiceStatus, error) {
 	return m, nil
 }
 
+func (c *dispatcherClient) Version(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*VersionMessage, error) {
+	out := new(VersionMessage)
+	err := c.cc.Invoke(ctx, "/Dispatcher/Version", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *dispatcherClient) Shutdown(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*emptypb.Empty, error) {
 	out := new(emptypb.Empty)
 	err := c.cc.Invoke(ctx, "/Dispatcher/Shutdown", in, out, opts...)
@@ -161,6 +171,7 @@ type DispatcherServer interface {
 	// vinit related operations
 	ReadConfigs(context.Context, *emptypb.Empty) (*emptypb.Empty, error)
 	SystemStatus(*emptypb.Empty, Dispatcher_SystemStatusServer) error
+	Version(context.Context, *emptypb.Empty) (*VersionMessage, error)
 	// shutdown (etc.) commands
 	Shutdown(context.Context, *emptypb.Empty) (*emptypb.Empty, error)
 	Reboot(context.Context, *emptypb.Empty) (*emptypb.Empty, error)
@@ -189,6 +200,9 @@ func (UnimplementedDispatcherServer) ReadConfigs(context.Context, *emptypb.Empty
 }
 func (UnimplementedDispatcherServer) SystemStatus(*emptypb.Empty, Dispatcher_SystemStatusServer) error {
 	return status.Errorf(codes.Unimplemented, "method SystemStatus not implemented")
+}
+func (UnimplementedDispatcherServer) Version(context.Context, *emptypb.Empty) (*VersionMessage, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Version not implemented")
 }
 func (UnimplementedDispatcherServer) Shutdown(context.Context, *emptypb.Empty) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Shutdown not implemented")
@@ -323,6 +337,24 @@ func (x *dispatcherSystemStatusServer) Send(m *ServiceStatus) error {
 	return x.ServerStream.SendMsg(m)
 }
 
+func _Dispatcher_Version_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(emptypb.Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DispatcherServer).Version(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/Dispatcher/Version",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DispatcherServer).Version(ctx, req.(*emptypb.Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Dispatcher_Shutdown_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(emptypb.Empty)
 	if err := dec(in); err != nil {
@@ -403,6 +435,10 @@ var Dispatcher_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ReadConfigs",
 			Handler:    _Dispatcher_ReadConfigs_Handler,
+		},
+		{
+			MethodName: "Version",
+			Handler:    _Dispatcher_Version_Handler,
 		},
 		{
 			MethodName: "Shutdown",

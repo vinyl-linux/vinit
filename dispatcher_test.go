@@ -3,11 +3,25 @@ package main
 import (
 	"context"
 	"os"
+	"reflect"
 	"testing"
 	"time"
 
 	"github.com/vinyl-linux/vinit/dispatcher"
+	"google.golang.org/grpc"
+	"google.golang.org/protobuf/types/known/emptypb"
 )
+
+type dummyServiceStatusServer struct {
+	grpc.ServerStream
+	messages []*dispatcher.ServiceStatus
+}
+
+func (d *dummyServiceStatusServer) Send(m *dispatcher.ServiceStatus) error {
+	d.messages = append(d.messages, m)
+
+	return nil
+}
 
 func newDispatcher() Dispatcher {
 	pwd, err := os.Getwd()
@@ -23,7 +37,7 @@ func newDispatcher() Dispatcher {
 	return Dispatcher{supervisor, dispatcher.UnimplementedDispatcherServer{}}
 }
 
-func TestDispatcher_Start(t *testing.T) {
+func TestDispatcher_Stop(t *testing.T) {
 	d := newDispatcher()
 
 	defer func() {
@@ -57,6 +71,24 @@ func TestDispatcher_Start(t *testing.T) {
 		}
 	})
 
+	t.Run("Service must not be empty", func(t *testing.T) {
+		_, err := d.Stop(context.Background(), &dispatcher.Service{
+			Name: "",
+		})
+		if err == nil || err.Error() != "rpc error: code = InvalidArgument desc = missing service name" {
+			t.Errorf("error: %#v should be %q", err.Error(), "missing service name")
+		}
+	})
+
+	t.Run("Service must exist", func(t *testing.T) {
+		_, err := d.Stop(context.Background(), &dispatcher.Service{
+			Name: "foo",
+		})
+		if err == nil || err.Error() != "rpc error: code = InvalidArgument desc = service does not exist" {
+			t.Errorf("error: %#v should be %q", err, "service does not exist")
+		}
+	})
+
 	t.Run("Cannot stop a stopped service", func(t *testing.T) {
 		_, err := d.Stop(context.Background(), &dispatcher.Service{
 			Name: "app",
@@ -67,7 +99,7 @@ func TestDispatcher_Start(t *testing.T) {
 	})
 }
 
-func TestDispatcher_Stop(t *testing.T) {
+func TestDispatcher_Start(t *testing.T) {
 	d := newDispatcher()
 
 	defer func() {
@@ -98,6 +130,24 @@ func TestDispatcher_Stop(t *testing.T) {
 		})
 		if err == nil || err.Error() != "service is already running" {
 			t.Errorf("error: %#v should be %q", err, "service is already running")
+		}
+	})
+
+	t.Run("Service must not be empty", func(t *testing.T) {
+		_, err := d.Start(context.Background(), &dispatcher.Service{
+			Name: "",
+		})
+		if err == nil || err.Error() != "rpc error: code = InvalidArgument desc = missing service name" {
+			t.Errorf("error: %#v should be %q", err.Error(), "missing service name")
+		}
+	})
+
+	t.Run("Service must exist", func(t *testing.T) {
+		_, err := d.Start(context.Background(), &dispatcher.Service{
+			Name: "foo",
+		})
+		if err == nil || err.Error() != "rpc error: code = InvalidArgument desc = service does not exist" {
+			t.Errorf("error: %#v should be %q", err, "service does not exist")
 		}
 	})
 }
@@ -189,6 +239,24 @@ func TestDispatcher_Status(t *testing.T) {
 		}
 	})
 
+	t.Run("Service must not be empty", func(t *testing.T) {
+		_, err := d.Status(context.Background(), &dispatcher.Service{
+			Name: "",
+		})
+		if err == nil || err.Error() != "rpc error: code = InvalidArgument desc = missing service name" {
+			t.Errorf("error: %#v should be %q", err.Error(), "missing service name")
+		}
+	})
+
+	t.Run("Service must exist", func(t *testing.T) {
+		_, err := d.Status(context.Background(), &dispatcher.Service{
+			Name: "foo",
+		})
+		if err == nil || err.Error() != "rpc error: code = InvalidArgument desc = service does not exist" {
+			t.Errorf("error: %#v should be %q", err, "service does not exist")
+		}
+	})
+
 }
 
 func TestDispatcher_Reload(t *testing.T) {
@@ -238,4 +306,90 @@ func TestDispatcher_Reload(t *testing.T) {
 			t.Errorf("error: %#v should be %q", err, "service is not running")
 		}
 	})
+
+	t.Run("Service must not be empty", func(t *testing.T) {
+		_, err := d.Reload(context.Background(), &dispatcher.Service{
+			Name: "",
+		})
+		if err == nil || err.Error() != "rpc error: code = InvalidArgument desc = missing service name" {
+			t.Errorf("error: %#v should be %q", err.Error(), "missing service name")
+		}
+	})
+
+	t.Run("Service must exist", func(t *testing.T) {
+		_, err := d.Reload(context.Background(), &dispatcher.Service{
+			Name: "foo",
+		})
+		if err == nil || err.Error() != "rpc error: code = InvalidArgument desc = service does not exist" {
+			t.Errorf("error: %#v should be %q", err, "service does not exist")
+		}
+	})
+
+}
+
+func TestDispatcher_ReadConfigs(t *testing.T) {
+	d := newDispatcher()
+
+	defer func() {
+		time.Sleep(time.Millisecond * 100)
+
+		err := d.s.StopAll()
+		if err != nil {
+			t.Fatal(err)
+		}
+	}()
+
+	_, err := d.Start(context.Background(), &dispatcher.Service{
+		Name: "app",
+	})
+	if err != nil {
+		t.Errorf("unexpected error: %#v", err)
+	}
+
+	time.Sleep(time.Millisecond * 100)
+
+	currentStatus := d.s.services["app"].status
+
+	_, err = d.ReadConfigs(context.Background(), new(emptypb.Empty))
+	if err != nil {
+		t.Errorf("unexpected error: %#v", err)
+	}
+
+	if !reflect.DeepEqual(currentStatus, d.s.services["app"].status) {
+		t.Errorf("expected %#v, received %#v", currentStatus, d.s.services["app"].status)
+	}
+}
+
+func TestDispatcher_Version(t *testing.T) {
+	d := newDispatcher()
+
+	vm, err := d.Version(context.Background(), nil)
+	if err != nil {
+		t.Errorf("unexpected error: %#v", err)
+	}
+
+	expect := &dispatcher.VersionMessage{
+		Ref:       ref,
+		BuildUser: buildUser,
+		BuiltOn:   builtOn,
+	}
+
+	if !reflect.DeepEqual(expect, vm) {
+		t.Errorf("expected %#v, received %#v", expect, vm)
+	}
+}
+
+func TestDispatcher_SystemStatus(t *testing.T) {
+	d := newDispatcher()
+
+	dss := new(dummyServiceStatusServer)
+
+	err := d.SystemStatus(new(emptypb.Empty), dss)
+	if err != nil {
+		t.Errorf("unexpected error: %#v", err)
+	}
+
+	if len(d.s.services) != len(dss.messages) {
+		t.Errorf("expected %d messages, received %d", len(d.s.services), len(dss.messages))
+	}
 }
