@@ -98,3 +98,11 @@ func (d Dispatcher) SystemStatus(_ *emptypb.Empty, ds dispatcher.Dispatcher_Syst
 
 	return
 }
+
+func (d Dispatcher) Version(context.Context, *emptypb.Empty) (*dispatcher.VersionMessage, error) {
+	return &dispatcher.VersionMessage{
+		Ref:       ref,
+		BuildUser: buildUser,
+		BuiltOn:   builtOn,
+	}, nil
+}
