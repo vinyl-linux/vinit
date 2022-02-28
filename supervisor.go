@@ -84,19 +84,39 @@ func (s *Supervisor) LoadConfigs() (err error) {
 }
 
 func (s *Supervisor) Start(name string, wait bool) error {
-	return s.services[name].Start(wait)
+	svc, ok := s.services[name]
+	if !ok {
+		return errServiceNotExist
+	}
+
+	return svc.Start(wait)
 }
 
 func (s *Supervisor) Status(name string) (ServiceStatus, error) {
-	return s.services[name].Status()
+	svc, ok := s.services[name]
+	if !ok {
+		return ServiceStatus{}, errServiceNotExist
+	}
+
+	return svc.Status()
 }
 
 func (s *Supervisor) Stop(name string) error {
-	return s.services[name].Stop()
+	svc, ok := s.services[name]
+	if !ok {
+		return errServiceNotExist
+	}
+
+	return svc.Stop()
 }
 
 func (s *Supervisor) Reload(name string) error {
-	return s.services[name].Reload()
+	svc, ok := s.services[name]
+	if !ok {
+		return errServiceNotExist
+	}
+
+	return svc.Reload()
 }
 
 func (s *Supervisor) StartAll() {

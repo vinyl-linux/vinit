@@ -11,7 +11,8 @@ import (
 )
 
 var (
-	errNoService = status.Error(codes.InvalidArgument, "missing service name")
+	errNoService       = status.Error(codes.InvalidArgument, "missing service name")
+	errServiceNotExist = status.Error(codes.InvalidArgument, "service does not exist")
 )
 
 type Dispatcher struct {
@@ -85,7 +86,10 @@ func (d Dispatcher) SystemStatus(_ *emptypb.Empty, ds dispatcher.Dispatcher_Syst
 	var status *dispatcher.ServiceStatus
 
 	for s := range d.s.services {
-		status, err = d.Status(ds.Context(), &dispatcher.Service{Name: s})
+		// ignore the context from ds.Context() because:
+		//  1. It makes testing much easier (gross); and
+		//  2. There's nothing in that context that's of any use downstream
+		status, err = d.Status(context.Background(), &dispatcher.Service{Name: s})
 		if err != nil {
 			return
 		}
