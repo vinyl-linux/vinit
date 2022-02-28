@@ -155,6 +155,12 @@ func (c client) reload(svc string) (err error) {
 	return
 }
 
+func (c client) readConfigs() (err error) {
+	_, err = c.c.ReadConfigs(context.Background(), new(emptypb.Empty))
+
+	return
+}
+
 func formatVersion(isServer bool, ref, user, built string) string {
 	return fmt.Sprintf("%s version\n---\nVersion: %s\nBuild User: %s\nBuilt On: %s\n",
 		isServerString(isServer), ref, user, built,
