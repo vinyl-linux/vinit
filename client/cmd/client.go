@@ -133,6 +133,28 @@ func (c client) reboot() (err error) {
 	return
 }
 
+func (c client) shutdown() (err error) {
+	_, err = c.c.Shutdown(context.Background(), new(emptypb.Empty))
+
+	return
+}
+
+func (c client) halt() (err error) {
+	_, err = c.c.Halt(context.Background(), new(emptypb.Empty))
+
+	return
+}
+
+func (c client) reload(svc string) (err error) {
+	is := &vinit.Service{
+		Name: svc,
+	}
+
+	_, err = c.c.Reload(context.Background(), is)
+
+	return
+}
+
 func formatVersion(isServer bool, ref, user, built string) string {
 	return fmt.Sprintf("%s version\n---\nVersion: %s\nBuild User: %s\nBuilt On: %s\n",
 		isServerString(isServer), ref, user, built,
