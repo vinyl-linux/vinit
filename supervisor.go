@@ -66,6 +66,14 @@ func (s *Supervisor) LoadConfigs() (err error) {
 		}
 
 		groupsServices[groupName] = append(groupsServices[groupName], name)
+
+		// If this service already exists/ has some state then copy it over
+		// (so we don't lose running state)
+		oldSvc := s.services[name]
+		if oldSvc != nil {
+			svc.status = oldSvc.status
+		}
+
 		services[name] = svc
 	}
 
