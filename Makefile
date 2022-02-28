@@ -59,6 +59,7 @@ test: $(TEST_BINARY)
 package: $(BINARY) $(CLIENT_BINARY) | $(PKG_DIR) ./scripts
 	install -m 0700 $(BINARY) $(PKG_DIR)
 	install -m 0700 $(CLIENT_BINARY) $(PKG_DIR)
+	install -m 0700 shims/* $(PKG_DIR)
 
 	cp -r scripts $(PKG_DIR)
 	cp Makefile $(PKG_DIR)
