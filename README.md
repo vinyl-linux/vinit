@@ -47,6 +47,7 @@ A service directory looks like:
 ├  .config.toml
 ├  bin
 ├  environment
+├  environment_overrides
 ├  logs
 │   ├ stderr
 │   └ stdout
@@ -58,6 +59,7 @@ Where:
 1. `.config.toml` is the service configuration, including arguments to pass to `bin`, setuid configuration, and grouping information. This is described in depth below.
 1. `bin` is the script/ binary/ application to run (which is usually a symlink; see: [20-dropbear/bin](https://github.com/vinyl-linux/vin-packages-stable/blob/main/dropbear/2020.81/20-dropbear/bin), which points to `/usr/sbin/dropbear`)
 1. `environment` is a file containing `KEY=value` pairs, and is used to set the environment in which `bin` runs
+1. `environment_overrides` is a file much the same as `environment`, but with system specific vars; in `vinit` we assume that `environment` is owned by the package maintainer, and as such can be clobbered by upgrades, whereas `environment_overrides` (which is loaded after `environment` and, as such, overrides vars in that file) is owned by the user and can be used to tune things better
 1. `logs` is a directory containing a file for both `stdout` and `stderr` (this directory/ these files will be created if they don't exist, with each file being appended to- `vinit` doesn't handle log rotation)
 1. `wd` is a directory (which is also often a symlink; see [99-vind/wd](https://github.com/vinyl-linux/vin-packages-stable/blob/main/vin/0.7.0/99-vind/wd), which points to `/etc/vinyl`
 

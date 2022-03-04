@@ -28,7 +28,6 @@ func TestLoadService(t *testing.T) {
 			} else if !test.expectError && err != nil {
 				t.Errorf("unexpected error %#v", err)
 			}
-
 		})
 	}
 }
