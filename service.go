@@ -41,6 +41,17 @@ type Service struct {
 	// kicks in, it checks whether this value is true
 	// prior to restarting
 	desiredRunning bool
+
+	// isDirty is set to true if a call to Supervisor.LoadConfigs
+	// fails and so new config hasn't been picked up.
+	//
+	// we can assume that this means there's a new config that doesn't
+	// look right, since the existence of this service means it must
+	// have been right first time.
+	//
+	// but, in any case, isDirty is a flag that means 'Something went
+	// wrong parsing this service config, go check the logs'
+	isDirty bool
 }
 
 func LoadService(dir string) (s *Service, err error) {

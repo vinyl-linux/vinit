@@ -4,3 +4,5 @@ certs/
 vinit-test
 vinit-x86_64/
 vinitctl
+stdout
+stderr

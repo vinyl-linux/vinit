@@ -1,0 +1,12 @@
+# 'App' service config file
+#
+
+type = "service"
+reload_signal = "BAT_SIGNAL"
+
+[user]
+user = "jspc"
+group = "jspc"
+
+[grouping]
+name = "system"

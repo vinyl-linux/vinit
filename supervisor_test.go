@@ -3,7 +3,6 @@ package main
 import (
 	"reflect"
 	"testing"
-	"time"
 )
 
 func TestNew(t *testing.T) {
@@ -24,23 +23,17 @@ func TestNew(t *testing.T) {
 	})
 }
 
-func TestSupervisor_RunShell_RunsWithoutPanic(t *testing.T) {
-	s, err := New("testdata/services")
-	if err != nil {
-		t.Errorf("unexpected error %#v", err)
+func TestNew_IncorrectConfigs(t *testing.T) {
+	_, err := New("testdata/mixed-status-services")
+	if err == nil {
+		t.Fatal("expected error, received none")
 	}
 
-	defer func() {
-		err := recover()
-		if err != nil {
-			t.Errorf("unexpected error: %#v", err)
-		}
-	}()
+	expect := `the following error(s) occurred parsing configs:
+01-broken-app: invalid signal "BAT_SIGNAL"
+`
 
-	go s.RunShell()
-
-	// give the shell time to do stuff
-	time.Sleep(time.Millisecond * 100)
-
-	s.restartShell = false
+	if expect != err.Error() {
+		t.Errorf("expected\n%s\n\nreceived\n%s", expect, err.Error())
+	}
 }
