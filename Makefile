@@ -19,6 +19,7 @@ BUILT_ON ?= $(shell date --rfc-3339=seconds | sed 's/ /T/')
 BUILT_BY ?= $(shell whoami)
 BUILD_REF ?= $(shell git symbolic-ref -q --short HEAD || git describe --tags --exact-match)
 
+.PHONY: default
 default: $(GRPC_FILES) $(CERTS) $(BINARY) $(CLIENT_BINARY)
 
 $(SERVER_DIR) $(CERTS_DIR) $(GENERATED_DIR) $(PKG_DIR):
