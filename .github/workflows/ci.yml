@@ -20,7 +20,8 @@ jobs:
         go-version: 1.17
 
     - name: Build
-      run: make
+      run: |
+        make -o dispatcher/dispatcher.pb.go -o dispatcher/dispatcher_grpc.pb.go
 
     - name: Test
       run: |

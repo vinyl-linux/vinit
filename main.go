@@ -70,7 +70,15 @@ func Setup() (grpcServer *grpc.Server, err error) {
 
 	supervisor, err = New(svcDir)
 	if err != nil {
-		return
+		if _, ok := err.(ConfigParseError); !ok {
+			return
+		}
+
+		sugar.Warnw("could not load all configs",
+			"error", err.Error(),
+		)
+
+		err = nil
 	}
 
 	tlsCredentials, err := loadTLSCredentials()
