@@ -56,6 +56,20 @@ func LoadService(dir string) (s *Service, err error) {
 		return
 	}
 
+	overridesFn := filepath.Join(dir, "environment_overrides")
+	if _, err = os.Stat(overridesFn); err == nil {
+		var overrides EnvVars
+
+		overrides, err = LoadEnvVars(overridesFn)
+		if err != nil {
+			return
+		}
+
+		s.Env = append(s.Env, overrides...)
+	}
+
+	err = nil
+
 	uid, err := s.Config.User.Uid()
 	if err != nil {
 		return
