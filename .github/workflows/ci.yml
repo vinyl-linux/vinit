@@ -25,7 +25,7 @@ jobs:
     - name: Test
       run: |
         sudo useradd -m jspc
-        make test
+        make test -o dispatcher/dispatcher.pb.go -o dispatcher/dispatcher_grpc.pb.go
 
     - name: gosec
       run: |
@@ -58,7 +58,7 @@ jobs:
     - name: Test
       run: |
         sudo useradd -m jspc
-        make test
+        make test -o dispatcher/dispatcher.pb.go -o dispatcher/dispatcher_grpc.pb.go
 
     - name: SonarCloud Scan
       uses: sonarsource/sonarcloud-github-action@master

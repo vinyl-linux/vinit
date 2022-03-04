@@ -16,7 +16,7 @@ jobs:
 
     - name: Package
       run: |
-        make package CERTS_DIR=/etc/vinyl/certs
+        make package -o dispatcher/dispatcher.pb.go -o dispatcher/dispatcher_grpc.pb.go CERTS_DIR=/etc/vinyl/certs
         tar cvvjf vinit-x86_64.tar.bz2 vinit-x86_64
 
     - name: Release
