@@ -13,6 +13,15 @@ func TestSetup(t *testing.T) {
 	}
 }
 
+func TestSetup_DodgyServicesJustWarns(t *testing.T) {
+	svcDir = "testdata/mixed-status-services"
+
+	_, err := Setup()
+	if err != nil {
+		t.Errorf("unexpected error %#v", err)
+	}
+}
+
 func TestSetup_MissingSvcDir(t *testing.T) {
 	svcDir = "/tmp/this/dir/hopefully/doesnt/exist"
 

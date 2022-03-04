@@ -66,7 +66,7 @@ func (s *Supervisor) LoadConfigs() (err error) {
 	}
 
 	var svc *Service
-	cpe := new(ConfigParseError)
+	cpe := ConfigParseError{}
 
 	for _, entry := range entries {
 		if !entry.IsDir() {
