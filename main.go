@@ -4,44 +4,37 @@ import (
 	"crypto/tls"
 	"net"
 	"os"
+	"os/exec"
 	"path/filepath"
 
 	"github.com/grpc-ecosystem/go-grpc-middleware"
 	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
 	"github.com/grpc-ecosystem/go-grpc-middleware/tags"
 	"github.com/vinyl-linux/vinit/dispatcher"
-	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/reflection"
 )
 
 var (
-	logger *zap.Logger
-	sugar  *zap.SugaredLogger
-
 	sockAddr = "/run/vinit.sock"
 	svcDir   = envOrDefault("SVC_DIR", "/etc/vinit/services")
 	certDir  = "certs"
 )
 
-func init() {
-	var err error
-
-	if logger == nil {
-		logger, err = zap.NewProduction()
-		if err != nil {
-			panic(err)
-		}
-	}
-
-	sugar = logger.Sugar()
-}
-
 func main() {
 	defer os.Remove(sockAddr)
 
-	srv, _ := Setup()
+	srv, err := Setup()
+	if err != nil {
+		sugar.Errorw("setup failed, booting into recovery shell",
+			"error", err.Error(),
+		)
+
+		recoveryShell()
+
+		return
+	}
 
 	if os.Getpid() == 1 {
 		// try to delete sockAddr, if it exists.
@@ -54,21 +47,35 @@ func main() {
 
 	lis, err := net.Listen("unix", sockAddr)
 	if err != nil {
-		sugar.Panic(err)
+		sugar.Errorw("could not listen on socket address, booting into recovery shell",
+			"sockAddr", sockAddr,
+			"error", err.Error(),
+		)
+
+		recoveryShell()
+
+		return
 	}
 
-	sugar.Panic(srv.Serve(lis))
+	err = srv.Serve(lis)
+	sugar.Errorw("vinit failed",
+		"error", err.Error(),
+	)
+
+	recoveryShell()
 }
 
-func Setup() (grpcServer *grpc.Server, supervisor *Supervisor) {
-	supervisor, err := New(svcDir)
+func Setup() (grpcServer *grpc.Server, err error) {
+	var supervisor *Supervisor
+
+	supervisor, err = New(svcDir)
 	if err != nil {
-		sugar.Panic(err)
+		return
 	}
 
 	tlsCredentials, err := loadTLSCredentials()
 	if err != nil {
-		sugar.Panic(err)
+		return
 	}
 
 	supervisor.StartAll()
@@ -117,4 +124,15 @@ func loadTLSCredentials() (credentials.TransportCredentials, error) {
 	}
 
 	return credentials.NewTLS(config), nil
+}
+
+func recoveryShell() {
+	logger.Info("Press Ctrl+D to reboot")
+
+	c := exec.Command("/sbin/agetty", "-L", "-8", "--autologin", "root", "115200", "tty1", "linux")
+	c.Stdin = os.Stdin
+	c.Stdout = os.Stdout
+	c.Stderr = os.Stderr
+
+	_ = c.Run()
 }

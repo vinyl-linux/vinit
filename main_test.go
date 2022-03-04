@@ -5,41 +5,29 @@ import (
 )
 
 func TestSetup(t *testing.T) {
-	defer func() {
-		err := recover()
-		if err != nil {
-			t.Errorf("unexpected panic: %#v", err)
-		}
-	}()
-
 	svcDir = "testdata/services"
 
-	Setup()
+	_, err := Setup()
+	if err != nil {
+		t.Errorf("unexpected error %#v", err)
+	}
 }
 
 func TestSetup_MissingSvcDir(t *testing.T) {
-	defer func() {
-		err := recover()
-		if err == nil {
-			t.Error("expected panic, received none")
-		}
-	}()
-
 	svcDir = "/tmp/this/dir/hopefully/doesnt/exist"
 
-	Setup()
+	_, err := Setup()
+	if err == nil {
+		t.Errorf("expected error, received none")
+	}
 }
 
 func TestSetup_MissingCerts(t *testing.T) {
-	defer func() {
-		err := recover()
-		if err == nil {
-			t.Error("expected panic, received none")
-		}
-	}()
-
 	svcDir = "testdata/services"
 	certDir = "/tmp/this/dir/hopefully/doesnt/exist"
 
-	Setup()
+	_, err := Setup()
+	if err == nil {
+		t.Errorf("expected error, received none")
+	}
 }

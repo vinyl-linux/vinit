@@ -2,11 +2,9 @@ package main
 
 import (
 	"os"
-	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strings"
-	"time"
 )
 
 var (
@@ -19,7 +17,28 @@ type Supervisor struct {
 	dir            string
 	groupsServices map[string][]string
 	services       map[string]*Service
-	restartShell   bool
+}
+
+type ConfigParseError struct {
+	errors map[string]error
+}
+
+func (c *ConfigParseError) Append(svc string, err error) {
+	if c.errors == nil {
+		c.errors = make(map[string]error)
+	}
+
+	c.errors[svc] = err
+}
+
+func (c ConfigParseError) Error() string {
+	out := new(strings.Builder)
+	out.WriteString("the following error(s) occurred parsing configs:\n")
+	for svc, err := range c.errors {
+		out.WriteString(svc + ": " + err.Error() + "\n")
+	}
+
+	return out.String()
 }
 
 func New(dir string) (s *Supervisor, err error) {
@@ -47,6 +66,7 @@ func (s *Supervisor) LoadConfigs() (err error) {
 	}
 
 	var svc *Service
+	cpe := new(ConfigParseError)
 
 	for _, entry := range entries {
 		if !entry.IsDir() {
@@ -55,7 +75,11 @@ func (s *Supervisor) LoadConfigs() (err error) {
 
 		svc, err = LoadService(filepath.Join(s.dir, entry.Name()))
 		if err != nil {
-			return
+			// log error, recover
+			svc.isDirty = true
+			cpe.Append(entry.Name(), err)
+
+			continue
 		}
 
 		name := serviceName(entry.Name())
@@ -77,6 +101,12 @@ func (s *Supervisor) LoadConfigs() (err error) {
 		services[name] = svc
 	}
 
+	if len(cpe.errors) > 0 {
+		return cpe
+	}
+
+	// Only assign new services and groups when everything loads,
+	// rather than accidentally returning broken state
 	s.groupsServices = groupsServices
 	s.services = services
 
@@ -180,37 +210,6 @@ func (s *Supervisor) StopAll() (err error) {
 	}
 
 	return
-}
-
-func (s *Supervisor) RunShell() {
-	sc := s.Config.StartupScript
-
-	// Keep restarting shell if it crashes
-	//
-	// This is used during shutdown, for instance,
-	// to stop the inital shell constantly restarting
-	s.restartShell = true
-
-	for s.restartShell {
-		c := exec.Command(sc.cmd, sc.args...) //#nosec: G204
-		c.Env = os.Environ()
-		c.Dir = "/"
-
-		c.Stdin = os.Stdin
-		c.Stdout = os.Stdout
-		c.Stderr = os.Stderr
-
-		err := c.Run()
-		if err != nil {
-			sugar.Errorw("shell restarting",
-				"cmd", sc.cmd,
-				"args", strings.Join(sc.args, " "),
-				"error", err.Error(),
-			)
-		}
-
-		time.Sleep(time.Second)
-	}
 }
 
 func serviceName(s string) string {
