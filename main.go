@@ -23,6 +23,8 @@ var (
 )
 
 func main() {
+	go reap()
+
 	defer os.Remove(sockAddr)
 
 	srv, err := Setup()
