@@ -83,7 +83,7 @@ func getZombiePids() (pids []int, err error) {
 		return
 	}
 
-	defer f.Close()
+	defer f.Close() // #nosec: G307
 
 	pids = make([]int, 0)
 
@@ -131,14 +131,14 @@ func getZombiePids() (pids []int, err error) {
 // makes sense to leave it as a string and not to strconv it until we need
 // to.
 func checkZombie(pid string) bool {
-	f, err := os.Open(filepath.Join(procDir, pid, "status"))
+	f, err := os.Open(filepath.Join(procDir, pid, "status")) // #nosec: G304
 	if err != nil {
 		// swallow errors; maybe the pid has ended, or maybe there's another
 		// issue that would stop us waiting on the process anyway /shrug
 		return false
 	}
 
-	defer f.Close()
+	defer f.Close() // #nosec: G307
 
 	var fields []string
 
