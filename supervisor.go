@@ -75,15 +75,19 @@ func (s *Supervisor) LoadConfigs() (err error) {
 
 		svc, err = LoadService(filepath.Join(s.dir, entry.Name()))
 		if err != nil {
-			// log error, recover
-			svc.isDirty = true
 			cpe.Append(entry.Name(), err)
-
-			continue
+			svc.loadError = err.Error()
 		}
 
 		name := serviceName(entry.Name())
-		groupName := s.Config.ReconcileOverride(name, svc.Config.Grouping.GroupName)
+
+		var groupName string
+		if svc.loadError == "" {
+			groupName = s.Config.ReconcileOverride(name, svc.Config.Grouping.GroupName)
+		} else {
+			groupName = ""
+		}
+
 		_, ok := groupsServices[groupName]
 		if !ok {
 			groupsServices[groupName] = make([]string, 0)
@@ -101,14 +105,12 @@ func (s *Supervisor) LoadConfigs() (err error) {
 		services[name] = svc
 	}
 
-	if len(cpe.errors) > 0 {
-		return cpe
-	}
-
-	// Only assign new services and groups when everything loads,
-	// rather than accidentally returning broken state
 	s.groupsServices = groupsServices
 	s.services = services
+
+	if len(cpe.errors) > 0 {
+		err = cpe
+	}
 
 	return
 }
@@ -117,6 +119,10 @@ func (s *Supervisor) Start(name string, wait bool) error {
 	svc, ok := s.services[name]
 	if !ok {
 		return errServiceNotExist
+	}
+
+	if svc.loadError != "" {
+		return errServiceDodgyConf
 	}
 
 	return svc.Start(wait)
@@ -153,6 +159,12 @@ func (s *Supervisor) StartAll() {
 	var err error
 
 	for _, group := range s.Config.Groups {
+		// Ignore anything with an empty group; this signifies
+		// a config error
+		if group == "" {
+			continue
+		}
+
 		services, ok := s.groupsServices[group]
 		if !ok {
 			sugar.Errorw("group either has no services or does not exist",
