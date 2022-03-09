@@ -6,14 +6,12 @@ import (
 )
 
 func TestNew(t *testing.T) {
-	s, err := New("testdata/services")
-	if err != nil {
-		t.Errorf("unexpected error %#v", err)
-	}
+	s, _ := New("testdata/services")
 
 	t.Run("groups and service mappings are correct", func(t *testing.T) {
 		got := s.groupsServices
 		expect := map[string][]string{
+			"":       []string{"broken"},
 			"system": []string{"app", "app-cronjob", "app-oneoff"},
 		}
 

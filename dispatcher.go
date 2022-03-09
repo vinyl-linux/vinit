@@ -11,8 +11,9 @@ import (
 )
 
 var (
-	errNoService       = status.Error(codes.InvalidArgument, "missing service name")
-	errServiceNotExist = status.Error(codes.InvalidArgument, "service does not exist")
+	errNoService        = status.Error(codes.InvalidArgument, "missing service name")
+	errServiceNotExist  = status.Error(codes.InvalidArgument, "service does not exist")
+	errServiceDodgyConf = status.Error(codes.FailedPrecondition, "service config is incorrect")
 )
 
 type Dispatcher struct {

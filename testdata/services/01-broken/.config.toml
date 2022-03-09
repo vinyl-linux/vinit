@@ -1,0 +1,15 @@
+# 'App' service config file
+#
+
+type = "service"
+reload_signal = "nuffin"
+
+[user]
+user = "jspc"
+group = "jspc"
+
+[grouping]
+name = "system"
+
+[command]
+args = "-a -b -c 100"

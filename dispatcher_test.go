@@ -29,10 +29,7 @@ func newDispatcher() Dispatcher {
 		panic(err)
 	}
 
-	supervisor, err := New(pwd + "/testdata/services")
-	if err != nil {
-		panic(err)
-	}
+	supervisor, _ := New(pwd + "/testdata/services")
 
 	return Dispatcher{supervisor, dispatcher.UnimplementedDispatcherServer{}}
 }
@@ -139,6 +136,19 @@ func TestDispatcher_Start(t *testing.T) {
 		})
 		if err == nil || err.Error() != "rpc error: code = InvalidArgument desc = missing service name" {
 			t.Errorf("error: %#v should be %q", err.Error(), "missing service name")
+		}
+	})
+
+	t.Run("Service must not have a dodgy config", func(t *testing.T) {
+		_, err := d.Start(context.Background(), &dispatcher.Service{
+			Name: "broken",
+		})
+		if err == nil {
+			t.Fatalf("expected error")
+		}
+
+		if err.Error() != "rpc error: code = FailedPrecondition desc = service config is incorrect" {
+			t.Errorf("error: %#v should be %q", err.Error(), "service config is incorrect")
 		}
 	})
 
@@ -351,8 +361,17 @@ func TestDispatcher_ReadConfigs(t *testing.T) {
 	currentStatus := d.s.services["app"].status
 
 	_, err = d.ReadConfigs(context.Background(), new(emptypb.Empty))
-	if err != nil {
-		t.Errorf("unexpected error: %#v", err)
+	if err == nil {
+		t.Fatal("expected error, received none")
+	}
+
+	cpe, ok := err.(ConfigParseError)
+	if !ok {
+		t.Fatalf("unexpected error of type: %T", err)
+	}
+
+	if _, ok = cpe.errors["01-broken"]; !ok {
+		t.Fatalf("expected an error for service %q in %#v", "01-broken", cpe)
 	}
 
 	if !reflect.DeepEqual(currentStatus, d.s.services["app"].status) {

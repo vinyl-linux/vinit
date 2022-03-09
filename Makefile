@@ -49,7 +49,7 @@ $(CLIENT_BINARY): client client/*.go client/**/*.go
 # This avoids having to redownload dependencies and having to configure
 # toolchains/ go env vars
 $(TEST_BINARY): $(GRPC_FILES) $(CERTS) *.go go.mod go.sum
-	-go test -covermode=count -o $@ -tags sudo > /dev/null
+	go test -covermode=count -c -o $@ -tags sudo > /dev/null
 
 .PHONY: test
 test: $(TEST_BINARY)
