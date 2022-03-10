@@ -61,5 +61,5 @@ var systemLogsCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.AddCommand(reloadCmd)
+	rootCmd.AddCommand(systemLogsCmd)
 }

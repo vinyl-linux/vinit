@@ -26,7 +26,7 @@ func NewLogger(kmesgF string) (l Logger, err error) {
 	l.Buffer = make([]string, maxLogLines)
 
 	l.c = make(chan string)
-	l.f, err = os.OpenFile(kmesgF, os.O_RDWR|unix.O_CLOEXEC|unix.O_NONBLOCK|unix.O_NOCTTY, 0o666)
+	l.f, err = os.OpenFile(kmesgF, os.O_RDWR|unix.O_CLOEXEC|unix.O_NONBLOCK|unix.O_NOCTTY, 0o666) // #nosec: G302,G304
 	if err != nil {
 		return
 	}
