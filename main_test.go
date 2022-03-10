@@ -1,8 +1,21 @@
 package main
 
 import (
+	"os"
 	"testing"
 )
+
+func TestMain(m *testing.M) {
+	var err error
+
+	sugar, err = NewLogger("testdata/kmesg")
+	if err != nil {
+		panic(err)
+	}
+
+	code := m.Run()
+	os.Exit(code)
+}
 
 func TestSetup(t *testing.T) {
 	svcDir = "testdata/services"

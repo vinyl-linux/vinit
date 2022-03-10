@@ -2,13 +2,13 @@ package main
 
 import (
 	"crypto/tls"
+	"fmt"
 	"net"
 	"os"
 	"os/exec"
 	"path/filepath"
 
 	"github.com/grpc-ecosystem/go-grpc-middleware"
-	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
 	"github.com/grpc-ecosystem/go-grpc-middleware/tags"
 	"github.com/vinyl-linux/vinit/dispatcher"
 	"google.golang.org/grpc"
@@ -20,9 +20,16 @@ var (
 	sockAddr = "/run/vinit.sock"
 	svcDir   = envOrDefault("SVC_DIR", "/etc/vinit/services")
 	certDir  = "certs"
+	kmesgF   = "/dev/kmsg"
 )
 
 func main() {
+	var err error
+	sugar, err := NewLogger(kmesgF)
+	if err != nil {
+		panic(err)
+	}
+
 	go reap()
 
 	defer os.Remove(sockAddr)
@@ -96,11 +103,9 @@ func Setup() (grpcServer *grpc.Server, err error) {
 		grpc.Creds(tlsCredentials),
 		grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(
 			grpc_ctxtags.StreamServerInterceptor(),
-			grpc_zap.StreamServerInterceptor(logger),
 		)),
 		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(
 			grpc_ctxtags.UnaryServerInterceptor(),
-			grpc_zap.UnaryServerInterceptor(logger),
 		)),
 	)
 
@@ -137,7 +142,7 @@ func loadTLSCredentials() (credentials.TransportCredentials, error) {
 }
 
 func recoveryShell() {
-	logger.Info("Press Ctrl+D to reboot")
+	fmt.Println("Press Ctrl+D to reboot")
 
 	c := exec.Command("/sbin/agetty", "-L", "-8", "--autologin", "root", "115200", "tty1", "linux")
 	c.Stdin = os.Stdin
