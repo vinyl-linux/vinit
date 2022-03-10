@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"os"
 	"reflect"
@@ -18,6 +19,17 @@ type dummyServiceStatusServer struct {
 }
 
 func (d *dummyServiceStatusServer) Send(m *dispatcher.ServiceStatus) error {
+	d.messages = append(d.messages, m)
+
+	return nil
+}
+
+type dummyServiceLogsServer struct {
+	grpc.ServerStream
+	messages []*dispatcher.LogMessage
+}
+
+func (d *dummyServiceLogsServer) Send(m *dispatcher.LogMessage) error {
 	d.messages = append(d.messages, m)
 
 	return nil
@@ -410,5 +422,43 @@ func TestDispatcher_SystemStatus(t *testing.T) {
 
 	if len(d.s.services) != len(dss.messages) {
 		t.Errorf("expected %d messages, received %d", len(d.s.services), len(dss.messages))
+	}
+}
+
+func TestDispatcher_SystemLogs(t *testing.T) {
+	d := newDispatcher()
+
+	dss := new(dummyServiceLogsServer)
+
+	sugar = Logger{
+		Buffer: make([]string, maxLogLines),
+
+		c: make(chan string),
+		f: &bytes.Buffer{},
+	}
+
+	go sugar.Start()
+
+	sugar.Infow("hello <3")
+	sugar.Infow("hello <3")
+
+	time.Sleep(time.Millisecond * 100)
+
+	err := d.SystemLogs(new(emptypb.Empty), dss)
+	if err != nil {
+		t.Errorf("unexpected error: %#v", err)
+	}
+
+	if len(sugar.Buffer) != len(dss.messages) {
+		t.Errorf("expected %d messages, received %d", len(sugar.Buffer), len(dss.messages))
+	}
+
+	expect := `vinit info: "hello <3"`
+	if dss.messages[len(dss.messages)-1].Line != expect {
+		t.Errorf("expected %q, received %q", expect, dss.messages[len(dss.messages)-1].Line)
+	}
+
+	if len(dss.messages) != maxLogLines {
+		t.Errorf("expected %d lines, received %d", maxLogLines, len(dss.messages))
 	}
 }

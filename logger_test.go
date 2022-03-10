@@ -87,7 +87,7 @@ func TestLogger_Buffer(t *testing.T) {
 
 	go l.Start()
 
-	for i := 0; i < 10; i++ {
+	for i := 0; i < 250; i++ {
 		l.addLog("test", "iter", "i", i)
 	}
 
@@ -96,10 +96,14 @@ func TestLogger_Buffer(t *testing.T) {
 
 	t.Run("new lines go to front of buffer", func(t *testing.T) {
 		got := l.Buffer
-		expect := []string{"vinit test: \"iter\", i=\"9\"", "vinit test: \"iter\", i=\"8\"", "vinit test: \"iter\", i=\"7\"", "vinit test: \"iter\", i=\"6\"", "vinit test: \"iter\", i=\"5\"", "vinit test: \"iter\", i=\"4\"", "vinit test: \"iter\", i=\"3\"", "vinit test: \"iter\", i=\"2\"", "vinit test: \"iter\", i=\"1\""}
+		expect := []string{"vinit test: \"iter\", i=\"249\"", "vinit test: \"iter\", i=\"248\"", "vinit test: \"iter\", i=\"247\"", "vinit test: \"iter\", i=\"246\"", "vinit test: \"iter\", i=\"245\"", "vinit test: \"iter\", i=\"244\"", "vinit test: \"iter\", i=\"243\"", "vinit test: \"iter\", i=\"242\"", "vinit test: \"iter\", i=\"241\"", "vinit test: \"iter\", i=\"240\""}
 
 		if !reflect.DeepEqual(expect, got) {
 			t.Errorf("expected\n%#v\n\nreceived\n%#v", expect, got)
+		}
+
+		if len(l.Buffer) != maxLogLines {
+			t.Errorf("expected %d, received %d", maxLogLines, len(l.Buffer))
 		}
 	})
 }

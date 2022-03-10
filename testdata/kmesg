@@ -1,7 +1,0 @@
-vinit warn: "could not load all configs", error="the following error(s) occurred parsing configs:
-01-broken: invalid signal "nuffin"
-"vinit info: "starting", group="system", service="app"vinit info: "started!", group="system", service="app"vinit info: "starting", group="system", service="app-cronjob"vinit info: "started!", group="system", service="app-cronjob"vinit info: "starting", group="system", service="app-oneoff"vinit error: "failed!", group="system", service="app-oneoff", error="fork/exec testdata/services/00-app-oneoff/bin: no such file or directory"vinit error: "group either has no services or does not exist", group="my-group"vinit error: "group either has no services or does not exist", group="etc"vinit warn: "could not load all configs", error="the following error(s) occurred parsing configs:
-01-broken-app: invalid signal "BAT_SIGNAL"
-"vinit warn: "could not load all configs", error="the following error(s) occurred parsing configs:
-01-broken: invalid signal "nuffin"
-"vinit info: "reaper is reaping", count="1", pids="[2]"

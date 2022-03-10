@@ -42,7 +42,7 @@ func (l *Logger) Start() {
 			fmt.Fprint(l.f, msg)
 		}
 
-		l.Buffer = append([]string{msg}, l.Buffer[:maxLogLines-2]...)
+		l.Buffer = append([]string{msg}, l.Buffer[:maxLogLines-1]...)
 	}
 }
 

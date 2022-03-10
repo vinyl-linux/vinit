@@ -16,6 +16,7 @@ service Dispatcher {
   rpc ReadConfigs(google.protobuf.Empty) returns (google.protobuf.Empty) {}
   rpc SystemStatus(google.protobuf.Empty) returns (stream ServiceStatus) {}
   rpc Version(google.protobuf.Empty) returns (VersionMessage) {}
+  rpc SystemLogs(google.protobuf.Empty) returns (stream LogMessage) {}
 
   // shutdown (etc.) commands
   rpc Shutdown(google.protobuf.Empty) returns (google.protobuf.Empty) {}
@@ -45,4 +46,8 @@ message VersionMessage {
   // We store this as a string, rather than a datetime, because
   // we never need to do anything clever with it, beyond showing it
   string built_on = 3;
+}
+
+message LogMessage {
+  string line = 1;
 }

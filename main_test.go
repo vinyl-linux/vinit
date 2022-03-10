@@ -8,7 +8,16 @@ import (
 func TestMain(m *testing.M) {
 	var err error
 
-	sugar, err = NewLogger("testdata/kmesg")
+	maxLogLines = 10
+
+	f, err := os.CreateTemp("", "")
+	if err != nil {
+		panic(err)
+	}
+
+	f.Close()
+
+	sugar, err = NewLogger(f.Name())
 	if err != nil {
 		panic(err)
 	}
