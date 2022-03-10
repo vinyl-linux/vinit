@@ -25,10 +25,12 @@ var (
 
 func main() {
 	var err error
-	sugar, err := NewLogger(kmesgF)
+	sugar, err = NewLogger(kmesgF)
 	if err != nil {
 		panic(err)
 	}
+
+	sugar.Infow("starting vinit")
 
 	go reap()
 
@@ -44,6 +46,8 @@ func main() {
 
 		return
 	}
+
+	sugar.Infow("services started, configuring grpc socket")
 
 	if os.Getpid() == 1 {
 		// try to delete sockAddr, if it exists.
@@ -65,6 +69,8 @@ func main() {
 
 		return
 	}
+
+	sugar.Infow("starting listener")
 
 	err = srv.Serve(lis)
 	sugar.Errorw("vinit failed",

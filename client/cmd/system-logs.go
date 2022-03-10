@@ -40,7 +40,7 @@ import (
 var systemLogsCmd = &cobra.Command{
 	Use:   "system-logs",
 	Short: "Read the vinit log buffer",
-	Args:  cobra.ExactArgs(1),
+	Args:  cobra.ExactArgs(0),
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		c, err := newClient(socketAddr)
 		if err != nil {

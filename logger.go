@@ -60,7 +60,7 @@ func (l Logger) Warnw(msg string, kvs ...interface{}) {
 
 func (l Logger) addLog(level, msg string, kvs ...interface{}) {
 	elems := make([]string, 0)
-	elems = append(elems, fmt.Sprintf("vinit %s: %q", level, msg))
+	elems = append(elems, fmt.Sprintf("vinit %s: %s", level, msg))
 
 	switch len(kvs) {
 	case 0, 2:
@@ -76,5 +76,5 @@ func (l Logger) addLog(level, msg string, kvs ...interface{}) {
 		elems = append(elems, fmt.Sprintf(`%v="%v"`, kvs[i], kvs[i+1]))
 	}
 
-	l.c <- strings.Join(elems, ", ")
+	l.c <- strings.Join(elems, " ")
 }
