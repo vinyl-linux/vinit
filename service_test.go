@@ -21,7 +21,7 @@ func TestLoadService(t *testing.T) {
 		{"happy path", "testdata/services/00-app", false},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			_, err := LoadService(test.dir)
+			_, err := LoadService("", test.dir)
 
 			if test.expectError && err == nil {
 				t.Errorf("expected error, received none")
@@ -40,7 +40,7 @@ func TestService_Start_UnableToWriteLogs(t *testing.T) {
 		}
 	}()
 
-	s, err := LoadService("testdata/erroring/logs-unwritable")
+	s, err := LoadService("", "testdata/erroring/logs-unwritable")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -62,7 +62,7 @@ func TestService_Start_UnableToCreateLogs(t *testing.T) {
 		}
 	}()
 
-	s, err := LoadService("testdata/erroring/logdir-uncreatable")
+	s, err := LoadService("", "testdata/erroring/logdir-uncreatable")
 	if err != nil {
 		t.Fatal(err)
 	}

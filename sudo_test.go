@@ -14,7 +14,7 @@ import (
 func TestService_Run(t *testing.T) {
 	d, _ := os.Getwd()
 
-	s, err := LoadService(filepath.Join(d, "testdata/services/00-app-oneoff"))
+	s, err := LoadService("app-oneoff", filepath.Join(d, "testdata/services/00-app-oneoff"))
 	if err != nil {
 		t.Errorf("unexpected error %#v", err)
 	}

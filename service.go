@@ -21,6 +21,7 @@ type ServiceStatus struct {
 }
 
 type Service struct {
+	Name   string
 	Config ServiceConfig
 	Env    EnvVars
 
@@ -36,12 +37,6 @@ type Service struct {
 	status ServiceStatus
 	proc   *exec.Cmd
 
-	// Service.Stop() sets this 'desired state' value
-	// before killing the process. When the Start() loop
-	// kicks in, it checks whether this value is true
-	// prior to restarting
-	desiredRunning bool
-
 	// loadError is set if a call to Supervisor.LoadConfigs
 	// fails and so new config hasn't been picked up.
 	//
@@ -51,9 +46,10 @@ type Service struct {
 	loadError string
 }
 
-func LoadService(dir string) (s *Service, err error) {
+func LoadService(name, dir string) (s *Service, err error) {
 	s = new(Service)
 
+	s.Name = name
 	s.Config, err = LoadServiceConfig(filepath.Join(dir, ".config.toml"))
 	if err != nil {
 		return
@@ -126,20 +122,30 @@ func (s *Service) Start(wait bool) (err error) {
 	}
 
 	go func() {
-		var cont = true
-		for cont {
-			s.status.Running = true
+		s.status.Running = true
 
-			s.status.Error = s.start()
+		s.status.Error = s.start()
 
-			cont = s.desiredRunning
+		switch s.Config.Type {
+		case ServiceType_Service:
+			// if we get here, the service has failed
+			s.status.Success = false
 
-			if s.Config.Type == ServiceType_Oneoff {
-				s.status.Success = s.Config.Oneoff.Success(s.status.ExitStatus)
+		case ServiceType_Cron:
+			// crons are errors unless they exit 0
+			s.status.Success = s.status.ExitStatus == 0
 
-				return
-			}
+		case ServiceType_Oneoff:
+			// oneoffs have a list of valid exits
+			s.status.Success = s.Config.Oneoff.Success(s.status.ExitStatus)
+		}
 
+		if !s.status.Success {
+			sugar.Errorw("service finishes unexpectedly",
+				"status", s.status.ExitStatus,
+				"service", s.Name,
+				"error", s.status.Error.Error(),
+			)
 		}
 	}()
 
@@ -189,7 +195,6 @@ func (s *Service) Stop() (err error) {
 		return fmt.Errorf("service is not running")
 	}
 
-	s.desiredRunning = false
 	s.status.EndTime = time.Now()
 
 	err = s.proc.Process.Kill()
@@ -224,19 +229,23 @@ func (s *Service) mkLogdir() error {
 }
 
 func (s *Service) streamStdout() (err error) {
-	s.proc.Stdout, err = os.OpenFile(filepath.Join(s.logdir, "stdout"), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
-	if err != nil {
+	stdout, err := os.OpenFile(filepath.Join(s.logdir, "stdout"), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
+	if err != nil || s.proc == nil {
 		s.proc.Stdout = io.Discard
 	}
+
+	s.proc.Stdout = stdout
 
 	return
 }
 
 func (s *Service) streamStderr() (err error) {
-	s.proc.Stderr, err = os.OpenFile(filepath.Join(s.logdir, "stderr"), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
-	if err != nil {
+	stderr, err := os.OpenFile(filepath.Join(s.logdir, "stderr"), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
+	if err != nil || s.proc == nil {
 		s.proc.Stderr = io.Discard
 	}
+
+	s.proc.Stderr = stderr
 
 	return
 }
