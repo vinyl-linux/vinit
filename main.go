@@ -25,7 +25,7 @@ var (
 
 func main() {
 	var err error
-	sugar, err := NewLogger(kmesgF)
+	sugar, err = NewLogger(kmesgF)
 	if err != nil {
 		panic(err)
 	}
