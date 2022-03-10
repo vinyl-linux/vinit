@@ -73,13 +73,12 @@ func (s *Supervisor) LoadConfigs() (err error) {
 			continue
 		}
 
-		svc, err = LoadService(filepath.Join(s.dir, entry.Name()))
+		name := serviceName(entry.Name())
+		svc, err = LoadService(name, filepath.Join(s.dir, entry.Name()))
 		if err != nil {
 			cpe.Append(entry.Name(), err)
 			svc.loadError = err.Error()
 		}
-
-		name := serviceName(entry.Name())
 
 		var groupName string
 		if svc.loadError == "" {
