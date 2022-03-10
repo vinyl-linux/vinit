@@ -32,6 +32,7 @@ type DispatcherClient interface {
 	ReadConfigs(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	SystemStatus(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (Dispatcher_SystemStatusClient, error)
 	Version(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*VersionMessage, error)
+	SystemLogs(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (Dispatcher_SystemLogsClient, error)
 	// shutdown (etc.) commands
 	Shutdown(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	Reboot(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*emptypb.Empty, error)
@@ -132,6 +133,38 @@ func (c *dispatcherClient) Version(ctx context.Context, in *emptypb.Empty, opts 
 	return out, nil
 }
 
+func (c *dispatcherClient) SystemLogs(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (Dispatcher_SystemLogsClient, error) {
+	stream, err := c.cc.NewStream(ctx, &Dispatcher_ServiceDesc.Streams[1], "/Dispatcher/SystemLogs", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &dispatcherSystemLogsClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type Dispatcher_SystemLogsClient interface {
+	Recv() (*LogMessage, error)
+	grpc.ClientStream
+}
+
+type dispatcherSystemLogsClient struct {
+	grpc.ClientStream
+}
+
+func (x *dispatcherSystemLogsClient) Recv() (*LogMessage, error) {
+	m := new(LogMessage)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 func (c *dispatcherClient) Shutdown(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*emptypb.Empty, error) {
 	out := new(emptypb.Empty)
 	err := c.cc.Invoke(ctx, "/Dispatcher/Shutdown", in, out, opts...)
@@ -172,6 +205,7 @@ type DispatcherServer interface {
 	ReadConfigs(context.Context, *emptypb.Empty) (*emptypb.Empty, error)
 	SystemStatus(*emptypb.Empty, Dispatcher_SystemStatusServer) error
 	Version(context.Context, *emptypb.Empty) (*VersionMessage, error)
+	SystemLogs(*emptypb.Empty, Dispatcher_SystemLogsServer) error
 	// shutdown (etc.) commands
 	Shutdown(context.Context, *emptypb.Empty) (*emptypb.Empty, error)
 	Reboot(context.Context, *emptypb.Empty) (*emptypb.Empty, error)
@@ -203,6 +237,9 @@ func (UnimplementedDispatcherServer) SystemStatus(*emptypb.Empty, Dispatcher_Sys
 }
 func (UnimplementedDispatcherServer) Version(context.Context, *emptypb.Empty) (*VersionMessage, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Version not implemented")
+}
+func (UnimplementedDispatcherServer) SystemLogs(*emptypb.Empty, Dispatcher_SystemLogsServer) error {
+	return status.Errorf(codes.Unimplemented, "method SystemLogs not implemented")
 }
 func (UnimplementedDispatcherServer) Shutdown(context.Context, *emptypb.Empty) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Shutdown not implemented")
@@ -355,6 +392,27 @@ func _Dispatcher_Version_Handler(srv interface{}, ctx context.Context, dec func(
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Dispatcher_SystemLogs_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(emptypb.Empty)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(DispatcherServer).SystemLogs(m, &dispatcherSystemLogsServer{stream})
+}
+
+type Dispatcher_SystemLogsServer interface {
+	Send(*LogMessage) error
+	grpc.ServerStream
+}
+
+type dispatcherSystemLogsServer struct {
+	grpc.ServerStream
+}
+
+func (x *dispatcherSystemLogsServer) Send(m *LogMessage) error {
+	return x.ServerStream.SendMsg(m)
+}
+
 func _Dispatcher_Shutdown_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(emptypb.Empty)
 	if err := dec(in); err != nil {
@@ -457,6 +515,11 @@ var Dispatcher_ServiceDesc = grpc.ServiceDesc{
 		{
 			StreamName:    "SystemStatus",
 			Handler:       _Dispatcher_SystemStatus_Handler,
+			ServerStreams: true,
+		},
+		{
+			StreamName:    "SystemLogs",
+			Handler:       _Dispatcher_SystemLogs_Handler,
 			ServerStreams: true,
 		},
 	},

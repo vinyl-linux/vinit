@@ -161,6 +161,41 @@ func (c client) readConfigs() (err error) {
 	return
 }
 
+func (c client) systemLogs() (logs []string, err error) {
+	logs = make([]string, 0)
+
+	sc, err := c.c.SystemLogs(context.Background(), new(emptypb.Empty))
+	if err != nil {
+		return
+	}
+
+	var m *vinit.LogMessage
+	for {
+		m, err = sc.Recv()
+		if err != nil {
+			if err == io.EOF {
+				err = nil
+			}
+
+			break
+		}
+
+		// If there are fewer logs than the assigned server log buffer
+		// we're going to receive a load of empty lines.
+		//
+		// If we get an empty line, then, don't store it.
+		//
+		// I'm hesitant to break from this for{} early just in case
+		// there are some logs which print empty
+		if m.Line != "" {
+			logs = append(logs, m.Line)
+		}
+	}
+
+	return
+
+}
+
 func formatVersion(isServer bool, ref, user, built string) string {
 	return fmt.Sprintf("%s version\n---\nVersion: %s\nBuild User: %s\nBuilt On: %s\n",
 		isServerString(isServer), ref, user, built,

@@ -111,3 +111,14 @@ func (d Dispatcher) Version(context.Context, *emptypb.Empty) (*dispatcher.Versio
 		BuiltOn:   builtOn,
 	}, nil
 }
+
+func (d Dispatcher) SystemLogs(_ *emptypb.Empty, ds dispatcher.Dispatcher_SystemLogsServer) (err error) {
+	for i := maxLogLines - 1; i >= 0; i-- {
+		err = ds.Send(&dispatcher.LogMessage{Line: sugar.Buffer[i]})
+		if err != nil {
+			return
+		}
+	}
+
+	return
+}

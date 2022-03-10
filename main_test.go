@@ -1,8 +1,30 @@
 package main
 
 import (
+	"os"
 	"testing"
 )
+
+func TestMain(m *testing.M) {
+	var err error
+
+	maxLogLines = 10
+
+	f, err := os.CreateTemp("", "")
+	if err != nil {
+		panic(err)
+	}
+
+	f.Close()
+
+	sugar, err = NewLogger(f.Name())
+	if err != nil {
+		panic(err)
+	}
+
+	code := m.Run()
+	os.Exit(code)
+}
 
 func TestSetup(t *testing.T) {
 	svcDir = "testdata/services"
