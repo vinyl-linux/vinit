@@ -72,8 +72,6 @@ func LoadService(name, dir string) (s *Service, err error) {
 		s.Env = append(s.Env, overrides...)
 	}
 
-	err = nil
-
 	uid, err := s.Config.User.Uid()
 	if err != nil {
 		return
