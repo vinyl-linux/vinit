@@ -5,7 +5,6 @@ package main
 
 import (
 	"os"
-	"os/exec"
 	"path/filepath"
 	"testing"
 	"time"
@@ -35,7 +34,5 @@ func TestService_Run(t *testing.T) {
 
 	if s.status.Error != nil {
 		t.Errorf("unexpected error %#v", s.status.Error)
-		t.Logf("%#v", s.status.Error.(*exec.ExitError).ProcessState)
-		t.Logf("%#v", s)
 	}
 }
