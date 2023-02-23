@@ -47,6 +47,12 @@ func newDispatcher() Dispatcher {
 }
 
 func TestDispatcher_Stop(t *testing.T) {
+	var err error
+	sugar, err = NewLogger("/dev/stdout")
+	if err != nil {
+		panic(err)
+	}
+
 	d := newDispatcher()
 
 	defer func() {
@@ -78,6 +84,7 @@ func TestDispatcher_Stop(t *testing.T) {
 		if d.s.services["app"].isRunning() {
 			t.Error("app either did not stop, or did not update status")
 		}
+
 	})
 
 	t.Run("Service must not be empty", func(t *testing.T) {
