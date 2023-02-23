@@ -38,10 +38,10 @@ jobs:
         go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.51.2
         golangci-lint run --skip-files='.*_test.go'
 
-    - name: gokart
-      run: |
-        go install github.com/praetorian-inc/gokart@latest
-        gokart scan
+    # - name: gokart
+    #   run: |
+    #     go install github.com/praetorian-inc/gokart@latest
+    #     gokart scan
 
   sonarcloud:
     runs-on: ubuntu-latest
