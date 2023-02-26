@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime/debug"
 
 	"github.com/grpc-ecosystem/go-grpc-middleware"
 	"github.com/grpc-ecosystem/go-grpc-middleware/tags"
@@ -24,6 +25,8 @@ var (
 )
 
 func main() {
+	defer panicHandler()
+
 	var err error
 	sugar, err = NewLogger(kmesgF)
 	if err != nil {
@@ -139,6 +142,27 @@ func loadTLSCredentials() (credentials.TransportCredentials, error) {
 	}
 
 	return credentials.NewTLS(config), nil
+}
+
+func panicHandler() {
+	err := recover()
+	if err != nil {
+		stack := string(debug.Stack())
+		errStr := err.(error).Error()
+
+		if sugar.c != nil {
+			sugar.Errorw("vinit panic!",
+				"error", errStr,
+				"trace", stack,
+			)
+		} else {
+			// This branch occurs on any panic before our
+			// kmesg handler is enabled
+			fmt.Printf("panic:\n%s\n%s", errStr, stack)
+		}
+
+		recoveryShell()
+	}
 }
 
 func recoveryShell() {
