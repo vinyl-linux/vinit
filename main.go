@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime/debug"
 
 	"github.com/grpc-ecosystem/go-grpc-middleware"
 	"github.com/grpc-ecosystem/go-grpc-middleware/tags"
@@ -17,6 +18,19 @@ import (
 )
 
 var (
+	// supervisor is the thing that handles all of the
+	// running of services, including tracking whether or not
+	// they're even running
+	//
+	// Why is this a global variable?
+	// Because we need to be able to stop all services and drop to
+	// a shell if our init process panics, so we can suss out what
+	// happened.
+	//
+	// Without a global, this needs all kinds of software architecture
+	// changes
+	supervisor *Supervisor
+
 	sockAddr = "/run/vinit.sock"
 	svcDir   = envOrDefault("SVC_DIR", "/etc/vinit/services")
 	certDir  = "certs"
@@ -24,6 +38,8 @@ var (
 )
 
 func main() {
+	defer panicHandler()
+
 	var err error
 	sugar, err = NewLogger(kmesgF)
 	if err != nil {
@@ -75,8 +91,6 @@ func main() {
 }
 
 func Setup() (grpcServer *grpc.Server, err error) {
-	var supervisor *Supervisor
-
 	supervisor, err = New(svcDir)
 	if err != nil {
 		if _, ok := err.(ConfigParseError); !ok {
@@ -139,6 +153,31 @@ func loadTLSCredentials() (credentials.TransportCredentials, error) {
 	}
 
 	return credentials.NewTLS(config), nil
+}
+
+func panicHandler() {
+	err := recover()
+	if err != nil {
+		if supervisor != nil {
+			_ = supervisor.StopAll()
+		}
+
+		stack := string(debug.Stack())
+		errStr := err.(error).Error()
+
+		if sugar.c != nil {
+			sugar.Errorw("vinit panic!",
+				"error", errStr,
+				"trace", stack,
+			)
+		} else {
+			// This branch occurs on any panic before our
+			// kmesg handler is enabled
+			fmt.Printf("panic:\n%s\n%s", errStr, stack)
+		}
+
+		recoveryShell()
+	}
 }
 
 func recoveryShell() {
